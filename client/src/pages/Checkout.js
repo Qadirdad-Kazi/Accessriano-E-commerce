@@ -1,64 +1,81 @@
 import React, { useState } from "react";
-import axios from "axios";
-import "./Checkout.css";
+import { useNavigate } from "react-router-dom";
+// import "./Checkout.css";
 
 const Checkout = () => {
-  const [amount, setAmount] = useState("");
-  const [email, setEmail] = useState("");
-  const [redirectUrl, setRedirectUrl] = useState("");
-  const [payload, setPayload] = useState(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    address: "",
+    paymentMethod: "JazzCash",
+  });
+  const [cartItems] = useState(JSON.parse(localStorage.getItem("cart")) || []);
+  const navigate = useNavigate();
 
-  const handlePayment = async () => {
-    try {
-      const response = await axios.post("http://localhost:5000/api/payments/initiate", {
-        amount,
-        email,
-      });
-
-      setRedirectUrl(response.data.redirectUrl);
-      setPayload(response.data.payload);
-    } catch (error) {
-      console.error("Error initiating payment:", error);
-    }
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const handlePlaceOrder = () => {
+    // Send order data to backend or show a success message
+    console.log("Order placed:", formData, cartItems);
+    localStorage.removeItem("cart");
+    navigate("/checkout/success");
+  };
+
+  const getTotalPrice = () =>
+    cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
   return (
     <div className="container mt-5">
       <h1 className="text-center">Checkout</h1>
       <div className="checkout-form">
+        <h3>Total: ${getTotalPrice().toFixed(2)}</h3>
         <div className="mb-3">
-          <label htmlFor="amount" className="form-label">Amount (PKR)</label>
+          <label>Name</label>
           <input
-            type="number"
+            type="text"
             className="form-control"
-            id="amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
           />
         </div>
         <div className="mb-3">
-          <label htmlFor="email" className="form-label">Email</label>
+          <label>Email</label>
           <input
             type="email"
             className="form-control"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
           />
         </div>
-        <button className="btn btn-primary" onClick={handlePayment}>
-          Proceed to Payment
+        <div className="mb-3">
+          <label>Address</label>
+          <input
+            type="text"
+            className="form-control"
+            name="address"
+            value={formData.address}
+            onChange={handleInputChange}
+          />
+        </div>
+        <div className="mb-3">
+          <label>Payment Method</label>
+          <select
+            className="form-select"
+            name="paymentMethod"
+            value={formData.paymentMethod}
+            onChange={handleInputChange}
+          >
+            <option value="JazzCash">JazzCash</option>
+            <option value="COD">Cash on Delivery</option>
+          </select>
+        </div>
+        <button className="btn btn-success" onClick={handlePlaceOrder}>
+          Place Order
         </button>
-        {redirectUrl && (
-          <form action={redirectUrl} method="POST" target="_blank">
-            {Object.entries(payload).map(([key, value]) => (
-              <input key={key} type="hidden" name={key} value={value} />
-            ))}
-            <button type="submit" className="btn btn-success mt-3">
-              Pay with JazzCash
-            </button>
-          </form>
-        )}
       </div>
     </div>
   );

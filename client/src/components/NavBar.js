@@ -8,18 +8,15 @@ const Navbar = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // Redirect to shop page with the search query as a URL parameter
     navigate(`/shop?search=${searchQuery}`);
   };
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
       <div className="container">
-        {/* Brand Logo */}
         <Link className="navbar-brand" to="/">
           Accessoriano
         </Link>
-        {/* Mobile Hamburger Menu */}
         <button
           className="navbar-toggler"
           type="button"
@@ -29,8 +26,7 @@ const Navbar = () => {
           <span className="navbar-toggler-icon"></span>
         </button>
         <div className="collapse navbar-collapse" id="navbarNav">
-          {/* Navbar Links */}
-          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+          <ul className="navbar-nav me-auto">
             <li className="nav-item">
               <Link className="nav-link" to="/">
                 Home
@@ -47,12 +43,11 @@ const Navbar = () => {
               </Link>
             </li>
           </ul>
-          {/* Search Bar */}
           <form className="d-flex" onSubmit={handleSearch}>
             <input
               className="form-control me-2"
               type="search"
-              placeholder="Search products"
+              placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -60,7 +55,6 @@ const Navbar = () => {
               Search
             </button>
           </form>
-          {/* Login and Signup Buttons */}
           <div className="ms-3">
             <Link to="/login" className="btn btn-outline-light me-2">
               Login

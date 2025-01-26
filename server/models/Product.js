@@ -5,7 +5,7 @@ const productSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   description: { type: String, required: true },
   image: { type: String, required: true },
-  qrCode: { type: String }, // Add QR code URL field
+  qrCode: { type: String },
 });
 
 module.exports = mongoose.model("Product", productSchema);
