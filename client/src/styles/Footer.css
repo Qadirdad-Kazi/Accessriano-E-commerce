@@ -1,0 +1,22 @@
+.footer {
+    background-color: #343a40;
+    color: #f8f9fa;
+  }
+  
+  .footer a {
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  
+  .footer a:hover {
+    color: #ffc107;
+  }
+  
+  .footer .fab {
+    font-size: 1.5rem;
+  }
+  
+  .footer .fab:hover {
+    color: #ffc107;
+  }
+  
