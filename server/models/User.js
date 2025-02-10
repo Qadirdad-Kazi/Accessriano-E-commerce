@@ -1,3 +1,4 @@
+// server/models/User.js
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
@@ -16,8 +17,9 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: 'user', // Use 'admin' for admin users if needed
+    default: 'user', // or 'admin'
   },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);
+
