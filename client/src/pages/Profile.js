@@ -9,18 +9,17 @@ const Profile = () => {
   const [initialValues, setInitialValues] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch the user's profile details when the component mounts
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('token');
         const config = { headers: { 'x-auth-token': token } };
         const res = await axios.get('http://localhost:5000/api/auth/profile', config);
-        // Set initial form values based on fetched data
+        // Expected response: { message: "...", data: { name, email, role, ... } }
         setInitialValues({
           name: res.data.data.name,
           email: res.data.data.email,
-          // Add any additional fields if available (e.g., phone, address)
+          // Add other fields if needed
         });
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -32,13 +31,11 @@ const Profile = () => {
     fetchProfile();
   }, []);
 
-  // Define validation schema using Yup
   const validationSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
     email: Yup.string().email('Invalid email address').required('Email is required'),
   });
 
-  // Handle form submission to update the profile
   const handleSubmit = async (values, actions) => {
     try {
       const token = localStorage.getItem('token');
@@ -108,7 +105,7 @@ const Profile = () => {
                 disabled
               />
             </Box>
-            {/* You can add more fields here as needed */}
+            {/* Additional fields can be added here */}
             <Button
               type="submit"
               variant="contained"

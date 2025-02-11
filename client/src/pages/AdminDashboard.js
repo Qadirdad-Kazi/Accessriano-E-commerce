@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Container,
   Typography,
@@ -13,10 +13,13 @@ import {
   TableBody,
   Button,
   CircularProgress,
-} from "@mui/material";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+} from '@mui/material';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import AnalyticsDashboard from './AnalyticsDashboard'; // Ensure this exists
+// If you implement review moderation separately, import it, e.g.:
+// import ReviewModeration from './ReviewModeration';
 
 const AdminDashboard = () => {
   const [tabIndex, setTabIndex] = useState(0);
@@ -72,7 +75,6 @@ const AdminDashboard = () => {
       const config = { headers: { "x-auth-token": token } };
       await axios.delete(`http://localhost:5000/api/products/${id}`, config);
       toast.success("Product deleted successfully!");
-      // Refresh the product list after deletion
       fetchProducts();
     } catch (error) {
       console.error("Error deleting product:", error);
@@ -87,7 +89,6 @@ const AdminDashboard = () => {
       const config = { headers: { "x-auth-token": token } };
       await axios.delete(`http://localhost:5000/api/orders/${id}`, config);
       toast.success("Order deleted successfully!");
-      // Refresh the orders list after deletion
       fetchOrders();
     } catch (error) {
       console.error("Error deleting order:", error);
@@ -100,21 +101,21 @@ const AdminDashboard = () => {
       <Typography variant="h4" gutterBottom>
         Admin Dashboard
       </Typography>
-      <Tabs
-        value={tabIndex}
-        onChange={handleTabChange}
-        textColor="primary"
-        indicatorColor="primary"
-      >
+      <Tabs value={tabIndex} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
         <Tab label="Products" />
         <Tab label="Orders" />
+        <Tab label="Analytics" />
+        <Tab label="Reviews" />
       </Tabs>
       <Box sx={{ mt: 3 }}>
         {tabIndex === 0 && (
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Manage Products
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6">Manage Products</Typography>
+              <Button variant="contained" color="success" onClick={() => navigate('/admin/create-product')}>
+                Create New Product
+              </Button>
+            </Box>
             {loadingProducts ? (
               <CircularProgress />
             ) : (
@@ -138,13 +139,10 @@ const AdminDashboard = () => {
                           variant="outlined"
                           color="primary"
                           sx={{ mr: 1 }}
-                          onClick={() =>
-                            navigate(`/admin/edit-product/${product._id}`)
-                          }
+                          onClick={() => navigate(`/admin/edit-product/${product._id}`)}
                         >
                           Edit
                         </Button>
-
                         <Button
                           variant="contained"
                           color="error"
@@ -184,6 +182,7 @@ const AdminDashboard = () => {
                       <TableCell>${order.totalAmount}</TableCell>
                       <TableCell>{order.status}</TableCell>
                       <TableCell>
+                        {/* You can add an update status button here */}
                         <Button
                           variant="contained"
                           color="error"
@@ -197,6 +196,21 @@ const AdminDashboard = () => {
                 </TableBody>
               </Table>
             )}
+          </Paper>
+        )}
+        {tabIndex === 2 && (
+          // Analytics Dashboard Section
+          <AnalyticsDashboard />
+        )}
+        {tabIndex === 3 && (
+          // Placeholder for Review Moderation Section (create a ReviewModeration component if needed)
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Review Moderation
+            </Typography>
+            <Typography variant="body1">
+              (Implement review moderation features here, such as viewing, approving, or deleting reviews.)
+            </Typography>
           </Paper>
         )}
       </Box>

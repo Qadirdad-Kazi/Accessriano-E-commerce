@@ -4,16 +4,30 @@ const multer = require('multer');
 const { storage } = require('../config/cloudinary');
 const upload = multer({ storage });
 const productController = require('../controllers/productController');
-const auth = require('../middleware/auth');       // JWT authentication middleware
-const adminAuth = require('../middleware/adminAuth'); // Role-based admin middleware
 
-// Only authenticated admin users can add, update, or delete products
-router.post('/add', auth, adminAuth, upload.single('qrImage'), productController.addProduct);
-router.put('/:id', auth, adminAuth, upload.single('qrImage'), productController.updateProduct);
-router.delete('/:id', auth, adminAuth, productController.deleteProduct);
+// Create a new product (accept both qrImage and productImage)
+router.post(
+  '/add',
+  upload.fields([
+    { name: 'qrImage', maxCount: 1 },
+    { name: 'productImage', maxCount: 1 }
+  ]),
+  productController.addProduct
+);
 
-// Public endpoints (for reading products) can remain unprotected
+// Update product with potential new images
+router.put(
+  '/:id',
+  upload.fields([
+    { name: 'qrImage', maxCount: 1 },
+    { name: 'productImage', maxCount: 1 }
+  ]),
+  productController.updateProduct
+);
+
+// Other product routes
 router.get('/', productController.getAllProducts);
 router.get('/:id', productController.getProductById);
+router.delete('/:id', productController.deleteProduct);
 
 module.exports = router;

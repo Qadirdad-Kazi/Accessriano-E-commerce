@@ -8,16 +8,15 @@ import { toast } from 'react-toastify';
 
 const CreateProduct = () => {
   const navigate = useNavigate();
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedQRImage, setSelectedQRImage] = useState(null);
+  const [selectedProductImage, setSelectedProductImage] = useState(null);
 
-  // Initial form values
   const initialValues = {
     name: '',
     description: '',
     price: '',
   };
 
-  // Validation schema using Yup
   const validationSchema = Yup.object().shape({
     name: Yup.string().required('Name is required'),
     description: Yup.string().required('Description is required'),
@@ -27,35 +26,47 @@ const CreateProduct = () => {
       .required('Price is required'),
   });
 
-  // Handle file input change
-  const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
+  // File change handlers; ensure the file input's name attributes match your backend expectation.
+  const handleQRImageChange = (e) => {
+    setSelectedQRImage(e.target.files[0]);
   };
 
-  // Handle form submission
+  const handleProductImageChange = (e) => {
+    setSelectedProductImage(e.target.files[0]);
+  };
+
   const handleSubmit = async (values, actions) => {
     try {
       const token = localStorage.getItem('token');
-      // Create a FormData object to hold form values and file
       const formData = new FormData();
       formData.append('name', values.name);
       formData.append('description', values.description);
       formData.append('price', values.price);
-      if (selectedFile) {
-        // Append file under the field name that your backend expects (e.g., 'qrImage')
-        formData.append('qrImage', selectedFile);
+
+      if (selectedQRImage) {
+        formData.append('qrImage', selectedQRImage);
       }
-      
-      await axios.post('http://localhost:5000/api/products/add', formData, {
+      if (selectedProductImage) {
+        formData.append('productImage', selectedProductImage);
+      }
+
+      // Debug: log all FormData entries (for testing)
+      for (let pair of formData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
+
+      const res = await axios.post('http://localhost:5000/api/products/add', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'x-auth-token': token,
         },
       });
+
+      console.log('Response from product creation:', res.data);
       toast.success('Product created successfully!');
-      navigate('/admin'); // Redirect to the Admin Dashboard after creation
+      navigate('/admin');
     } catch (error) {
-      console.error('Error creating product:', error);
+      console.error('Error creating product:', error.response ? error.response.data : error);
       toast.error('Failed to create product.');
     } finally {
       actions.setSubmitting(false);
@@ -64,22 +75,9 @@ const CreateProduct = () => {
 
   return (
     <Container sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Create New Product
-      </Typography>
-      <Formik
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        onSubmit={handleSubmit}
-      >
-        {({
-          values,
-          errors,
-          touched,
-          handleChange,
-          handleBlur,
-          isSubmitting,
-        }) => (
+      <Typography variant="h4" gutterBottom>Create New Product</Typography>
+      <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
+        {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
           <Form>
             <Box sx={{ mb: 2 }}>
               <TextField
@@ -122,16 +120,14 @@ const CreateProduct = () => {
               />
             </Box>
             <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle1">Upload Product Image (QR Image)</Typography>
-              <input type="file" onChange={handleFileChange} />
+              <Typography variant="subtitle1">Upload QR Image</Typography>
+              <input type="file" name="qrImage" onChange={handleQRImageChange} />
             </Box>
-            <Button 
-              type="submit" 
-              variant="contained" 
-              color="primary" 
-              disabled={isSubmitting} 
-              sx={{ mt: 2 }}
-            >
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1">Upload Product Image</Typography>
+              <input type="file" name="productImage" onChange={handleProductImageChange} />
+            </Box>
+            <Button type="submit" variant="contained" color="primary" disabled={isSubmitting} sx={{ mt: 2 }}>
               Create Product
             </Button>
           </Form>

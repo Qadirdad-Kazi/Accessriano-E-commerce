@@ -2,9 +2,11 @@ import React from 'react';
 import { Container, Typography, List, ListItem, ListItemText, IconButton, TextField, Button, Box } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCart } from '../context/CartContext';
+import { useNavigate } from 'react-router-dom';
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity } = useCart();
+  const navigate = useNavigate();
 
   const handleQuantityChange = (productId, e) => {
     const newQuantity = parseInt(e.target.value, 10);
@@ -49,7 +51,12 @@ const Cart = () => {
       )}
       <Box sx={{ mt: 3 }}>
         <Typography variant="h5">Total: ${calculateTotal()}</Typography>
-        <Button variant="contained" color="primary" sx={{ mt: 2 }}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          sx={{ mt: 2 }}
+          onClick={() => navigate('/checkout')}
+        >
           Proceed to Checkout
         </Button>
       </Box>
