@@ -1,0 +1,13 @@
+# Redirect everything to index.html (typical for single-page apps)
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+# Build configuration 
+[build]
+  publish = "build"
+
+  # Modify the build command to force installation
+  # before running your build script
+  command = "npm install --legacy-peer-deps && npm run build"
