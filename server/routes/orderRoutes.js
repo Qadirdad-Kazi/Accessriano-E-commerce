@@ -13,7 +13,9 @@ router.get('/', auth, orderController.getOrders);
 router.get('/:id', auth, orderController.getOrderById);
 
 // Update an order (protected)
-// This could be used for order cancellation or status update
 router.put('/:id', auth, orderController.updateOrder);
+
+// Delete an order (protected)
+router.delete('/:id', auth, orderController.deleteOrder);
 
 module.exports = router;

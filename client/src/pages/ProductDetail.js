@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { 
   Container, Typography, Card, CardContent, CardMedia, Button, 
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, CircularProgress 
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, 
+  CircularProgress, Grid 
 } from '@mui/material';
 import ProductReviews from '../components/ProductReviews';
 
@@ -49,26 +50,53 @@ const ProductDetail = () => {
     );
   }
 
+  // Use fallback images if needed.
+  const productImage = product.productImageUrl || "https://via.placeholder.com/600x400?text=No+Product+Image";
+  const qrImage = product.qrImageUrl || "https://via.placeholder.com/150?text=No+QR+Image";
+
   return (
     <Container sx={{ mt: 4 }}>
+      {/* Top: Display the product image */}
+      <CardMedia
+        component="img"
+        height="400"
+        image={productImage}
+        alt={product.name}
+        sx={{ mb: 2 }}
+      />
+
+      {/* Details Card with two columns: Left for details, right for QR image */}
       <Card>
-        {product.qrImageUrl && (
-          <CardMedia
-            component="img"
-            height="300"
-            image={product.qrImageUrl}
-            alt={product.name}
-          />
-        )}
         <CardContent>
-          <Typography variant="h4" gutterBottom>{product.name}</Typography>
-          <Typography variant="body1" paragraph>{product.description}</Typography>
-          <Typography variant="h5" color="primary">Price: ${product.price}</Typography>
-          {product.qrImageUrl && (
-            <Button variant="contained" color="secondary" sx={{ mt: 2 }} onClick={handleArOpen}>
-              View in AR
-            </Button>
-          )}
+          <Grid container spacing={2}>
+            {/* Left side: Product details */}
+            <Grid item xs={12} md={8}>
+              <Typography variant="h4" gutterBottom>
+                {product.name}
+              </Typography>
+              <Typography variant="subtitle1" color="primary" gutterBottom>
+                ${product.price}
+              </Typography>
+              <Typography variant="body1" paragraph>
+                {product.description}
+              </Typography>
+              {product.qrImageUrl && (
+                <Button variant="contained" color="secondary" onClick={handleArOpen}>
+                  View in AR
+                </Button>
+              )}
+            </Grid>
+            {/* Right side: QR image */}
+            <Grid item xs={12} md={4} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {product.qrImageUrl && (
+                <img 
+                  src={qrImage} 
+                  alt="QR Code" 
+                  style={{ width: '100%', maxWidth: '200px' }} 
+                />
+              )}
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 
@@ -81,7 +109,7 @@ const ProductDetail = () => {
           </DialogContentText>
           {product.qrImageUrl && (
             <img 
-              src={product.qrImageUrl} 
+              src={qrImage} 
               alt="AR QR Code" 
               style={{ width: '100%', marginTop: '16px' }} 
             />
@@ -94,7 +122,7 @@ const ProductDetail = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Render the Product Reviews Component */}
+      {/* Product Reviews Component */}
       <ProductReviews />
     </Container>
   );

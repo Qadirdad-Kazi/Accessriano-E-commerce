@@ -21,6 +21,7 @@ const Home = () => {
 
   return (
     <Container>
+      <p>Raheel</p>
       <LanguageSwitcher />
       <Typography variant="h4" gutterBottom>{t('featured_products')}</Typography>
       <Grid container spacing={3}>

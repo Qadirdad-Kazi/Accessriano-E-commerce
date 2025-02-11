@@ -20,17 +20,23 @@ const AnalyticsDashboard = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        // Attempt to fetch analytics data from your backend API
-        const res = await axios.get('http://localhost:5000/api/analytics');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          toast.error("No token found. Please log in as admin.");
+          setLoading(false);
+          return;
+        }
+        const config = { headers: { 'x-auth-token': token } };
+        const res = await axios.get('http://localhost:5000/api/analytics', config);
         setAnalyticsData(res.data.data);
       } catch (error) {
         console.error('Error fetching analytics data:', error);
-        toast.error('Failed to fetch analytics data.');
-        // Use dummy data for demonstration
+        toast.error('Failed to fetch analytics data. Using dummy data.');
+        // Use dummy data: set reviews and average rating to 0 since there are no reviews
         setAnalyticsData({
           totalOrders: 120,
-          totalReviews: 85,
-          averageRating: 4.2,
+          totalReviews: 0,
+          averageRating: 0,
           totalProducts: 45,
         });
       } finally {
@@ -49,7 +55,7 @@ const AnalyticsDashboard = () => {
     );
   }
 
-  // Prepare chart data
+  // Prepare chart data for Recharts
   const chartData = [
     { name: 'Orders', value: analyticsData.totalOrders },
     { name: 'Reviews', value: analyticsData.totalReviews },

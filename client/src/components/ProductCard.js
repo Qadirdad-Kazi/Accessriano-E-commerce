@@ -1,10 +1,12 @@
-import React from 'react';
 import { Card, CardContent, CardMedia, Typography, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import React from 'react';
+
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
+  const fallbackImage = "https://via.placeholder.com/300x140?text=No+Image";
 
   const handleAddToCart = () => {
     addToCart(product, 1);
@@ -12,14 +14,12 @@ const ProductCard = ({ product }) => {
 
   return (
     <Card>
-      {product.qrImageUrl && (
-        <CardMedia
-          component="img"
-          height="140"
-          image={product.qrImageUrl}
-          alt={product.name}
-        />
-      )}
+      <CardMedia
+        component="img"
+        height="140"
+        image={product.productImageUrl || fallbackImage}
+        alt={product.name}
+      />
       <CardContent>
         <Typography gutterBottom variant="h5">
           {product.name}

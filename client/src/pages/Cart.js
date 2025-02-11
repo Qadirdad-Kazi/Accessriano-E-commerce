@@ -1,5 +1,8 @@
 import React from 'react';
-import { Container, Typography, List, ListItem, ListItemText, IconButton, TextField, Button, Box } from '@mui/material';
+import { 
+  Container, Typography, List, ListItem, ListItemText, 
+  IconButton, TextField, Button, Box, Avatar 
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +22,11 @@ const Cart = () => {
     return cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
   };
 
+  // Updated: Check for productImageUrl instead of product.image
+  const getProductImage = (product) => {
+    return product.productImageUrl || product.qrImageUrl || "https://via.placeholder.com/80?text=No+Image";
+  };
+
   return (
     <Container>
       <Typography variant="h4" gutterBottom>
@@ -30,6 +38,13 @@ const Cart = () => {
         <List>
           {cart.map(item => (
             <ListItem key={item.product._id} divider>
+              {/* Display product image using Avatar */}
+              <Avatar
+                variant="square"
+                src={getProductImage(item.product)}
+                alt={item.product.name}
+                sx={{ width: 80, height: 80, mr: 2 }}
+              />
               <ListItemText
                 primary={item.product.name}
                 secondary={`Price: $${item.product.price}`}

@@ -24,11 +24,15 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// Retrieve all orders for the logged-in user
+// Retrieve all orders for the logged-in user (or all orders for admin)
 exports.getOrders = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const orders = await Order.find({ user: userId }).populate('products.product');
+    let orders;
+    if (req.user.role === "admin") {
+      orders = await Order.find({}).populate('products.product');
+    } else {
+      orders = await Order.find({ user: req.user.id }).populate('products.product');
+    }
     res.status(200).json({
       message: 'Orders retrieved successfully',
       data: orders,
@@ -46,7 +50,6 @@ exports.getOrderById = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
-    // Optionally, add a check to ensure the order belongs to the user (or the user is admin)
     res.status(200).json({
       message: 'Order retrieved successfully',
       data: order,
@@ -72,5 +75,22 @@ exports.updateOrder = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error updating order', error });
+  }
+};
+
+// DELETE an order
+exports.deleteOrder = async (req, res) => {
+  try {
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    res.status(200).json({
+      message: 'Order deleted successfully',
+      data: order,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error deleting order', error });
   }
 };
