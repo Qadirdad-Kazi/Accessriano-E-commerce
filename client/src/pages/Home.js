@@ -4,6 +4,7 @@ import { Container, Grid, Typography } from '@mui/material';
 import ProductCard from '../components/ProductCard';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import HeroSection from "./HeroSection";
 
 const Home = () => {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ const Home = () => {
   return (
     <Container>
       <LanguageSwitcher />
+      <HeroSection />
       <Typography variant="h4" gutterBottom>{t('featured_products')}</Typography>
       <Grid container spacing={3}>
         {products.map(product => (
