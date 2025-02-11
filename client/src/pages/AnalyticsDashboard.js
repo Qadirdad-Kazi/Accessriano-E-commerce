@@ -2,6 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Container, Typography, Grid, Paper, CircularProgress } from '@mui/material';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 const AnalyticsDashboard = () => {
   const [analyticsData, setAnalyticsData] = useState(null);
@@ -39,6 +49,13 @@ const AnalyticsDashboard = () => {
     );
   }
 
+  // Prepare chart data
+  const chartData = [
+    { name: 'Orders', value: analyticsData.totalOrders },
+    { name: 'Reviews', value: analyticsData.totalReviews },
+    { name: 'Products', value: analyticsData.totalProducts },
+  ];
+
   return (
     <Container sx={{ mt: 4 }}>
       <Typography variant="h4" gutterBottom>
@@ -70,6 +87,23 @@ const AnalyticsDashboard = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Chart Section */}
+      <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
+        Overview Chart
+      </Typography>
+      <Paper sx={{ p: 2 }}>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="value" fill="#1976d2" />
+          </BarChart>
+        </ResponsiveContainer>
+      </Paper>
     </Container>
   );
 };

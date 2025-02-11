@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors'); // Import cors
 require('dotenv').config();
 
 // Import routes
@@ -9,6 +10,9 @@ const orderRoutes = require('./routes/orderRoutes');
 
 const app = express();
 const port = process.env.PORT || 5000;
+
+// Use CORS to allow cross-origin requests
+app.use(cors());
 
 // Middleware to parse JSON requests
 app.use(express.json());

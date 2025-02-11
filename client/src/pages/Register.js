@@ -20,7 +20,7 @@ const Register = () => {
       localStorage.setItem('token', res.data.token);
       navigate('/');
     } catch (err) {
-      setError(err.response.data.message || 'Registration failed');
+      setError(err.response?.data?.message || 'Registration failed');
     }
   };
 

@@ -13,8 +13,11 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create a new user instance
-    user = new User({ name, email, password });
+    // Set role to 'admin' for a specific email, otherwise 'user'
+    const role = email === "qadirdadkazi@gmail.com" ? "admin" : "user";
+
+    // Create a new user instance with role included
+    user = new User({ name, email, password, role });
 
     // Hash the password
     const salt = await bcrypt.genSalt(10);
@@ -23,8 +26,8 @@ exports.registerUser = async (req, res) => {
     // Save the user in the database
     await user.save();
 
-    // Generate JWT token
-    const payload = { user: { id: user._id } };
+    // Generate JWT token including the user's role
+    const payload = { user: { id: user._id, role: user.role } };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.status(201).json({ message: 'User registered successfully', token });
@@ -51,8 +54,8 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
-    const payload = { user: { id: user._id } };
+    // Generate JWT token including the user's role
+    const payload = { user: { id: user._id, role: user.role } };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.status(200).json({ message: 'Logged in successfully', token });
