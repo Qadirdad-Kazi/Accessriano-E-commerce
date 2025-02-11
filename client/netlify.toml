@@ -5,4 +5,4 @@ status = 200
 
 [build]
   publish = "build"
-  command = "CI=false npm install --legacy-peer-deps && npm run build"
+  command = "CI=false npm install --legacy-peer-deps && npm run build && npm install swiper"
