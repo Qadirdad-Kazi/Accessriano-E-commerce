@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import React from 'react';
 
-
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const fallbackImage = "https://via.placeholder.com/300x140?text=No+Image";
@@ -16,7 +15,7 @@ const ProductCard = ({ product }) => {
     <Card>
       <CardMedia
         component="img"
-        height="140"
+        height="200"
         image={product.productImageUrl || fallbackImage}
         alt={product.name}
       />
