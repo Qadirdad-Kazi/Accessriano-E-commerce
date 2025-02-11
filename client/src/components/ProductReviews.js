@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Typography, TextField, Button, List, ListItem, ListItemText } from '@mui/material';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -11,18 +11,18 @@ const ProductReviews = () => {
   const [rating, setRating] = useState(0);
 
   // Function to fetch reviews for the product
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       const res = await axios.get(`http://localhost:5000/api/products/${id}/reviews`);
       setReviews(res.data.data);
     } catch (error) {
       console.error('Error fetching reviews:', error);
     }
-  };
+  }, [id]); // Ensures fetchReviews is stable in memory
 
   useEffect(() => {
     fetchReviews();
-  }, [id]);
+  }, [fetchReviews]);
 
   // Function to handle review submission
   const handleReviewSubmit = async (e) => {
@@ -30,12 +30,13 @@ const ProductReviews = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      // Post review and rating to the backend
+      
       await axios.post(
         `http://localhost:5000/api/products/${id}/reviews`,
         { review: newReview, rating },
         config
       );
+
       toast.success('Review submitted successfully!');
       setNewReview('');
       setRating(0);
@@ -83,7 +84,7 @@ const ProductReviews = () => {
           type="number"
           inputProps={{ min: 1, max: 5 }}
           value={rating}
-          onChange={(e) => setRating(e.target.value)}
+          onChange={(e) => setRating(parseInt(e.target.value, 10))}
           sx={{ mb: 2 }}
         />
         <Button type="submit" variant="contained" color="primary">
