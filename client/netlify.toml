@@ -10,4 +10,4 @@ status = 200
 
   # Modify the build command to force installation
   # before running your build script
-  command = "npm install --legacy-peer-deps && npm run build"
+  command = "npm install --legacy-peer-deps && npm run build && npm install react-chat-widget@latest --force"
