@@ -24,7 +24,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Mount Routes
+// Default Route for Home `/`
+app.get('/', (req, res) => {
+  res.send("Welcome to Access Riano E-Commerce API! Use /api/test to check the server status.");
+});
+
+// Mount API Routes
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
