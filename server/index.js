@@ -14,7 +14,7 @@ const port = process.env.PORT || 5000;
 // ✅ Allow Frontend Requests Dynamically
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://your-netlify-site.netlify.app" // Replace with your actual Netlify URL
+  "https://your-netlify-site.netlify.app" // Replace with your actual Netlify frontend URL
 ];
 
 app.use(cors({
@@ -30,7 +30,23 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 
-// ✅ Explicitly Define `/api` Endpoint
+// ✅ Serve Homepage at `/`
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Accessriano E-Commerce API 🚀</h1>
+    <p>Welcome to the backend of Accesriano.</p>
+    <p><strong>Available API Endpoints:</strong></p>
+    <ul>
+      <li><a href="/api/test">Test API</a></li>
+      <li><a href="/api/products">Products API</a></li>
+      <li><a href="/api/auth">Auth API</a></li>
+      <li><a href="/api/orders">Orders API</a></li>
+      <li><a href="/api/analytics">Analytics API</a></li>
+    </ul>
+  `);
+});
+
+// ✅ API Base Endpoint
 app.get('/api', (req, res) => {
   res.json({
     message: "Welcome to Access Riano E-Commerce API 🚀",
