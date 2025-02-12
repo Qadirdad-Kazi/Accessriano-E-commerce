@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Container, TextField, Button, Typography, Box } from '@mui/material';
 import axios from 'axios';
+import { Container, TextField, Button, Typography, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../config';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -15,8 +16,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
-      // Save token to localStorage for future requests
+      const res = await axios.post(`${API_BASE_URL}/auth/login`, formData);
       localStorage.setItem('token', res.data.token);
       navigate('/');
     } catch (err) {
@@ -27,7 +27,7 @@ const Login = () => {
   return (
     <Container maxWidth="sm">
       <Box sx={{ mt: 8 }}>
-        <Typography variant="h4" gutterBottom>Login</Typography>
+        <Typography variant="h4">Login</Typography>
         {error && <Typography color="error">{error}</Typography>}
         <form onSubmit={handleSubmit}>
           <TextField

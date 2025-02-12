@@ -5,13 +5,14 @@ import ProductCard from '../components/ProductCard';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import HeroSection from "./HeroSection";
+import API_BASE_URL from '../config'; // ✅ Import API URL
 
 const Home = () => {
   const { t } = useTranslation();
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/products')
+    axios.get(`${API_BASE_URL}/products`) // ✅ Dynamic API URL
       .then(response => {
         setProducts(response.data.data);
       })

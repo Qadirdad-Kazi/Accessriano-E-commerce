@@ -18,8 +18,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AnalyticsDashboard from './AnalyticsDashboard'; // Ensure this exists
-// If you implement review moderation separately, import it, e.g.:
-// import ReviewModeration from './ReviewModeration';
+import API_BASE_URL from '../config'; // ✅ Import API URL
 
 const AdminDashboard = () => {
   const [tabIndex, setTabIndex] = useState(0);
@@ -29,30 +28,28 @@ const AdminDashboard = () => {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch products from the API
+  // ✅ Fetch Products
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem("token");
       const config = { headers: { "x-auth-token": token } };
-      const res = await axios.get("http://localhost:5000/api/products", config);
+      const res = await axios.get(`${API_BASE_URL}/products`, config); // ✅ Dynamic API URL
       setProducts(res.data.data);
     } catch (error) {
-      console.error("Error fetching products:", error);
       toast.error("Failed to fetch products.");
     } finally {
       setLoadingProducts(false);
     }
   };
 
-  // Fetch orders from the API
+  // ✅ Fetch Orders
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem("token");
       const config = { headers: { "x-auth-token": token } };
-      const res = await axios.get("http://localhost:5000/api/orders", config);
+      const res = await axios.get(`${API_BASE_URL}/orders`, config); // ✅ Dynamic API URL
       setOrders(res.data.data);
     } catch (error) {
-      console.error("Error fetching orders:", error);
       toast.error("Failed to fetch orders.");
     } finally {
       setLoadingOrders(false);
@@ -68,30 +65,28 @@ const AdminDashboard = () => {
     setTabIndex(newValue);
   };
 
-  // Delete product function with toast notifications
+  // ✅ Delete Product
   const handleDeleteProduct = async (id) => {
     try {
       const token = localStorage.getItem("token");
       const config = { headers: { "x-auth-token": token } };
-      await axios.delete(`http://localhost:5000/api/products/${id}`, config);
+      await axios.delete(`${API_BASE_URL}/products/${id}`, config); // ✅ Dynamic API URL
       toast.success("Product deleted successfully!");
       fetchProducts();
     } catch (error) {
-      console.error("Error deleting product:", error);
       toast.error("Failed to delete product.");
     }
   };
 
-  // Delete order function with toast notifications
+  // ✅ Delete Order
   const handleDeleteOrder = async (id) => {
     try {
       const token = localStorage.getItem("token");
       const config = { headers: { "x-auth-token": token } };
-      await axios.delete(`http://localhost:5000/api/orders/${id}`, config);
+      await axios.delete(`${API_BASE_URL}/orders/${id}`, config); // ✅ Dynamic API URL
       toast.success("Order deleted successfully!");
       fetchOrders();
     } catch (error) {
-      console.error("Error deleting order:", error);
       toast.error("Failed to delete order.");
     }
   };
@@ -160,34 +155,18 @@ const AdminDashboard = () => {
         )}
         {tabIndex === 1 && (
           <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Manage Orders
-            </Typography>
+            <Typography variant="h6">Manage Orders</Typography>
             {loadingOrders ? (
               <CircularProgress />
             ) : (
               <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Order ID</TableCell>
-                    <TableCell>Total Amount</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
                 <TableBody>
                   {orders.map((order) => (
                     <TableRow key={order._id}>
                       <TableCell>{order._id}</TableCell>
                       <TableCell>${order.totalAmount}</TableCell>
-                      <TableCell>{order.status}</TableCell>
                       <TableCell>
-                        {/* You can add an update status button here */}
-                        <Button
-                          variant="contained"
-                          color="error"
-                          onClick={() => handleDeleteOrder(order._id)}
-                        >
+                        <Button variant="contained" color="error" onClick={() => handleDeleteOrder(order._id)}>
                           Delete
                         </Button>
                       </TableCell>
@@ -198,21 +177,7 @@ const AdminDashboard = () => {
             )}
           </Paper>
         )}
-        {tabIndex === 2 && (
-          // Analytics Dashboard Section
-          <AnalyticsDashboard />
-        )}
-        {tabIndex === 3 && (
-          // Placeholder for Review Moderation Section (create a ReviewModeration component if needed)
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Review Moderation
-            </Typography>
-            <Typography variant="body1">
-              (Implement review moderation features here, such as viewing, approving, or deleting reviews.)
-            </Typography>
-          </Paper>
-        )}
+        {tabIndex === 2 && <AnalyticsDashboard />}
       </Box>
     </Container>
   );

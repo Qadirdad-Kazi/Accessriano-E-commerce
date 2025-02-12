@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
-// Import Routes
 const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -12,46 +11,55 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Set up CORS
-app.use(cors({ origin: '*' }));
+// ✅ Allow Frontend Requests Dynamically
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://your-netlify-site.netlify.app" // Replace with your Netlify URL
+];
 
-// Middleware to parse JSON
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS Policy Error: Not allowed'));
+  },
+  credentials: true
+}));
+
+// Middleware
 app.use(express.json());
 
-// Content Security Policy (CSP) Fix
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "default-src *; font-src * data:; img-src * data:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline';");
-  next();
-});
+// ✅ Dynamic API URL for Frontend (localhost & production)
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? "https://accessriano-e-commerce.vercel.app/api"
+  : "http://localhost:5000/api";
 
-// ✅ Default Route for Homepage `/`
 app.get('/', (req, res) => {
   res.send(`
-    <h1>Welcome to Access Riano E-Commerce API 🚀</h1>
-    <p>Use the API endpoints to access data.</p>
-    <p>Test the API: <a href="/api/test">Click here</a></p>
+    <h1>Access Riano E-Commerce API 🚀</h1>
+    <p>Test API: <a href="/api/test">Click here</a></p>
   `);
 });
 
-// Mount API Routes
+// ✅ Mount API Routes
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// Test Route
+// ✅ Test Route
 app.get('/api/test', (req, res) => {
   res.json({ message: "Server is running successfully!" });
 });
 
-// Connect to MongoDB
+// ✅ MongoDB Connection with Error Handling
 mongoose.set('strictQuery', false);
-mongoose
-  .connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ Connected to MongoDB");
     app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
   })
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-module.exports = app; // Required for Vercel
+module.exports = app;
