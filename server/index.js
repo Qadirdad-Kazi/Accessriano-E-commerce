@@ -24,9 +24,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Default Route for Home `/`
+// ✅ Default Route for Homepage `/`
 app.get('/', (req, res) => {
-  res.send("Welcome to Access Riano E-Commerce API! Use /api/test to check the server status.");
+  res.send(`
+    <h1>Welcome to Access Riano E-Commerce API 🚀</h1>
+    <p>Use the API endpoints to access data.</p>
+    <p>Test the API: <a href="/api/test">Click here</a></p>
+  `);
 });
 
 // Mount API Routes
