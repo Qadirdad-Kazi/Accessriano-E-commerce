@@ -18,14 +18,12 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('CORS Policy Error: Not allowed'));
-  },
+  origin: '*', // Allows all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow all methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
   credentials: true
 }));
+
 
 // Middleware
 app.use(express.json());
