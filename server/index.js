@@ -14,7 +14,7 @@ const port = process.env.PORT || 5000;
 // ✅ Allow Frontend Requests Dynamically
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://your-netlify-site.netlify.app" // Replace with your Netlify URL
+  "https://your-netlify-site.netlify.app" // Replace with your actual Netlify URL
 ];
 
 app.use(cors({
@@ -30,16 +30,18 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 
-// ✅ Dynamic API URL for Frontend (localhost & production)
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? "https://accessriano-e-commerce.vercel.app/api"
-  : "http://localhost:5000/api";
-
-app.get('/', (req, res) => {
-  res.send(`
-    <h1>Access Riano E-Commerce API 🚀</h1>
-    <p>Test API: <a href="/api/test">Click here</a></p>
-  `);
+// ✅ Explicitly Define `/api` Endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    message: "Welcome to Access Riano E-Commerce API 🚀",
+    endpoints: {
+      test: "/api/test",
+      products: "/api/products",
+      auth: "/api/auth",
+      orders: "/api/orders",
+      analytics: "/api/analytics"
+    }
+  });
 });
 
 // ✅ Mount API Routes
