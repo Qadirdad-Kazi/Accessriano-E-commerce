@@ -14,7 +14,7 @@ const port = process.env.PORT || 5000;
 // ✅ Allow Frontend Requests Dynamically
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://your-netlify-site.netlify.app" // Replace with your actual Netlify frontend URL
+  "https://accessriano.netlify.app/" // Replace with your actual Netlify frontend URL
 ];
 
 app.use(cors({
