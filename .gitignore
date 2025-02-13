@@ -1,2 +1,3 @@
 client/.env
 client/src/.env
+server/.env
