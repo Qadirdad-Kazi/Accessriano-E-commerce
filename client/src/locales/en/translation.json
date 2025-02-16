@@ -1,0 +1,52 @@
+{
+  "common": {
+    "welcome": "Welcome to Accessriano",
+    "search": "Search",
+    "cart": "Cart",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "profile": "Profile"
+  },
+  "product": {
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "outOfStock": "Out of Stock",
+    "categories": "Categories",
+    "price": "Price",
+    "description": "Description",
+    "reviews": "Reviews",
+    "rating": "Rating",
+    "writeReview": "Write a Review"
+  },
+  "categories": {
+    "caps": "Caps",
+    "rings": "Rings",
+    "glasses": "Glasses",
+    "bracelets": "Bracelets",
+    "shoes": "Shoes"
+  },
+  "cart": {
+    "empty": "Your cart is empty",
+    "total": "Total",
+    "checkout": "Checkout",
+    "remove": "Remove"
+  },
+  "checkout": {
+    "shippingAddress": "Shipping Address",
+    "paymentMethod": "Payment Method",
+    "orderSummary": "Order Summary",
+    "placeOrder": "Place Order"
+  },
+  "payment": {
+    "creditCard": "Credit Card",
+    "jazzCash": "JazzCash",
+    "cod": "Cash on Delivery"
+  },
+  "chatbot": {
+    "welcome": "Hello! How can I help you today?",
+    "productHelp": "Would you like help finding a product?",
+    "orderHelp": "Need help with your order?",
+    "support": "Contact Support"
+  }
+}

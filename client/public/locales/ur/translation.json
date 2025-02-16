@@ -1,0 +1,41 @@
+{
+  "common": {
+    "welcome": "ایکسیسریانو میں خوش آمدید",
+    "loading": "لوڈ ہو رہا ہے...",
+    "error": "ایک خرابی پیش آگئی"
+  },
+  "product": {
+    "featured_products": "نمایاں مصنوعات",
+    "price": "قیمت: ${{price}}",
+    "add_to_cart": "ٹوکری میں شامل کریں",
+    "view_details": "تفصیلات دیکھیں"
+  },
+  "navigation": {
+    "home": "ہوم",
+    "cart": "ٹوکری",
+    "profile": "پروفائل",
+    "login": "لاگ ان",
+    "register": "رجسٹر"
+  },
+  "chatbot": {
+    "title": "چیٹ سپورٹ",
+    "placeholder": "اپنا پیغام لکھیں...",
+    "send": "بھیجیں",
+    "welcome_message": "ہیلو! میں آپ کی کیسے مدد کر سکتا ہوں؟",
+    "loading": "سوچ رہا ہوں..."
+  },
+  "auth": {
+    "login": "لاگ ان",
+    "register": "رجسٹر",
+    "email": "ای میل",
+    "password": "پاس ورڈ",
+    "name": "پورا نام",
+    "login_button": "داخل ہوں",
+    "register_button": "رجسٹر کریں",
+    "no_account": "اکاؤنٹ نہیں ہے؟",
+    "register_now": "ابھی رجسٹر کریں",
+    "have_account": "پہلے سے اکاؤنٹ ہے؟",
+    "login_now": "ابھی لاگ ان کریں",
+    "logout": "لاگ آؤٹ"
+  }
+}

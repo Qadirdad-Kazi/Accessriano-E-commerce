@@ -1,0 +1,52 @@
+{
+  "common": {
+    "welcome": "ایکسیسریانو میں خوش آمدید",
+    "search": "تلاش کریں",
+    "cart": "ٹوکری",
+    "login": "لاگ ان",
+    "register": "رجسٹر کریں",
+    "logout": "لاگ آؤٹ",
+    "profile": "پروفائل"
+  },
+  "product": {
+    "addToCart": "ٹوکری میں شامل کریں",
+    "buyNow": "ابھی خریدیں",
+    "outOfStock": "سٹاک میں نہیں ہے",
+    "categories": "زمرہ جات",
+    "price": "قیمت",
+    "description": "تفصیل",
+    "reviews": "جائزے",
+    "rating": "درجہ بندی",
+    "writeReview": "جائزہ لکھیں"
+  },
+  "categories": {
+    "caps": "ٹوپیاں",
+    "rings": "انگوٹھیاں",
+    "glasses": "عینکیں",
+    "bracelets": "کنگن",
+    "shoes": "جوتے"
+  },
+  "cart": {
+    "empty": "آپ کی ٹوکری خالی ہے",
+    "total": "کل رقم",
+    "checkout": "چیک آؤٹ",
+    "remove": "ہٹائیں"
+  },
+  "checkout": {
+    "shippingAddress": "شپنگ ایڈریس",
+    "paymentMethod": "ادائیگی کا طریقہ",
+    "orderSummary": "آرڈر کا خلاصہ",
+    "placeOrder": "آرڈر کریں"
+  },
+  "payment": {
+    "creditCard": "کریڈٹ کارڈ",
+    "jazzCash": "جاز کیش",
+    "cod": "ادائیگی موصولی پر"
+  },
+  "chatbot": {
+    "welcome": "السلام علیکم! میں آپ کی کیسے مدد کر سکتا ہوں؟",
+    "productHelp": "کیا آپ کو کسی پروڈکٹ کی تلاش میں مدد چاہیے؟",
+    "orderHelp": "کیا آپ کو آرڈر کے بارے میں مدد چاہیے؟",
+    "support": "سپورٹ سے رابطہ کریں"
+  }
+}

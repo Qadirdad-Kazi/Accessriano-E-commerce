@@ -1,14 +1,26 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = function (req, res, next) {
-  const token = req.header('x-auth-token');
-  if (!token) return res.status(401).json({ message: 'Access denied. No token provided.' });
+  // Try to get token from different header formats
+  const token = req.header('x-auth-token') || 
+                (req.header('Authorization') || '').replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ 
+      success: false,
+      message: 'Access denied. No token provided.' 
+    });
+  }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
     req.user = decoded.user;
     next();
   } catch (err) {
-    res.status(400).json({ message: 'Invalid token' });
+    console.error('Token verification error:', err);
+    res.status(401).json({ 
+      success: false,
+      message: 'Invalid token' 
+    });
   }
 };

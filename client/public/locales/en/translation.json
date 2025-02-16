@@ -1,0 +1,42 @@
+{
+  "common": {
+    "welcome": "Welcome to Accessriano",
+    "loading": "Loading...",
+    "error": "An error occurred"
+  },
+  "product": {
+    "featured_products": "Featured Products",
+    "price": "Price: ${{price}}",
+    "add_to_cart": "Add to Cart",
+    "view_details": "View Details"
+  },
+  "navigation": {
+    "home": "Home",
+    "cart": "Cart",
+    "profile": "Profile",
+    "login": "Login",
+    "register": "Register"
+  },
+  "chatbot": {
+    "title": "Chat Assistant",
+    "placeholder": "Type your message...",
+    "send": "Send",
+    "welcome_message": "👋 Hi! I'm your shopping assistant. How can I help you today?",
+    "loading": "Thinking...",
+    "error": "Sorry, I'm having trouble understanding. Please try again."
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "name": "Full Name",
+    "login_button": "Sign In",
+    "register_button": "Sign Up",
+    "no_account": "Don't have an account?",
+    "register_now": "Register now",
+    "have_account": "Already have an account?",
+    "login_now": "Login now",
+    "logout": "Logout"
+  }
+}
