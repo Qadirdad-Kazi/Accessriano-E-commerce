@@ -10,6 +10,7 @@ import AppRoutes from './routes';
 import Navbar from './components/Navbar';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import ChatbotWidget from './components/ChatbotWidget';
 
 const LoadingFallback = () => (
   <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -36,6 +37,7 @@ function App() {
                   <AppRoutes />
                 </Suspense>
               </main>
+              <ChatbotWidget />
               <ToastContainer
                 position="bottom-right"
                 autoClose={3000}

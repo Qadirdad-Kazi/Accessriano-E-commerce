@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Container, Grid, Typography, CircularProgress, Box } from '@mui/material';
 import ProductCard from '../components/ProductCard';
+import HeroSection from '../components/HeroSection';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import API_BASE_URL from '../config';
@@ -45,9 +46,10 @@ const Home = () => {
       </Container>
     );
   }
-
+  
   return (
     <Container>
+      <HeroSection />
       <Box py={4}>
         <LanguageSwitcher />
         <Typography variant="h4" gutterBottom>Welcome to Accessriano</Typography>

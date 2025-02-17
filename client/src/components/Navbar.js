@@ -31,13 +31,14 @@ import { styled, alpha } from '@mui/material/styles';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
   borderRadius: theme.shape.borderRadius,
-  backgroundColor: alpha(theme.palette.common.white, 0.15),
+  backgroundColor: alpha(theme.palette.primary.main, 0.15),
   '&:hover': {
-    backgroundColor: alpha(theme.palette.common.white, 0.25),
+    backgroundColor: alpha(theme.palette.primary.main, 0.25),
   },
   marginRight: theme.spacing(2),
   marginLeft: 0,
@@ -109,7 +110,7 @@ const Navbar = () => {
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <AppBar position="sticky" elevation={0} sx={{ backgroundColor: 'background.paper' }}>
+    <AppBar position="sticky" elevation={0} sx={{ backgroundColor: 'primary.dark' }}>
       <Container maxWidth="lg">
         <Toolbar disableGutters>
           <Typography
@@ -118,7 +119,7 @@ const Navbar = () => {
             to="/"
             sx={{
               display: { xs: 'none', sm: 'block' },
-              color: 'primary.main',
+              color: 'white',
               textDecoration: 'none',
               fontWeight: 600,
               letterSpacing: 1
@@ -129,20 +130,10 @@ const Navbar = () => {
 
           {!isMobile && (
             <Stack direction="row" spacing={2} sx={{ ml: 4 }}>
-              <Button
-                color="primary"
-                startIcon={<HomeIcon />}
-                component={Link}
-                to="/"
-              >
+              <Button color="inherit" startIcon={<HomeIcon />} component={Link} to="/">
                 Home
               </Button>
-              <Button
-                color="primary"
-                startIcon={<CategoryIcon />}
-                component={Link}
-                to="/categories"
-              >
+              <Button color="inherit" startIcon={<CategoryIcon />} component={Link} to="/categories">
                 Categories
               </Button>
             </Stack>
@@ -163,76 +154,35 @@ const Navbar = () => {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <MotionIconButton
-              color="primary"
-              component={Link}
-              to="/cart"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Badge badgeContent={cartItemCount} color="secondary">
-                <CartIcon />
-              </Badge>
-            </MotionIconButton>
+          <LanguageSwitcher />
 
-            {user ? (
-              <>
-                <Tooltip title="Account settings">
-                  <IconButton
-                    onClick={handleMenu}
-                    size="small"
-                    color="primary"
-                  >
-                    <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                      {user.name ? user.name[0].toUpperCase() : <PersonIcon />}
-                    </Avatar>
-                  </IconButton>
-                </Tooltip>
-                <Menu
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={handleClose}
-                  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                >
-                  <MenuItem component={Link} to="/profile" onClick={handleClose}>
-                    Profile
-                  </MenuItem>
-                  <MenuItem component={Link} to="/order-history" onClick={handleClose}>
-                    Orders
-                  </MenuItem>
-                  {user.role === 'admin' && (
-                    <>
-                      <MenuItem component={Link} to="/admin" onClick={handleClose}>
-                        Admin Dashboard
-                      </MenuItem>
-                      <MenuItem component={Link} to="/admin/orders" onClick={handleClose}>
-                        Manage Orders
-                      </MenuItem>
-                      <MenuItem component={Link} to="/admin/create-product" onClick={handleClose}>
-                        Add Product
-                      </MenuItem>
-                      <MenuItem component={Link} to="/admin/analytics" onClick={handleClose}>
-                        Analytics
-                      </MenuItem>
-                    </>
-                  )}
-                  <MenuItem onClick={handleLogout}>Logout</MenuItem>
-                </Menu>
-              </>
-            ) : (
-              <Button
-                color="primary"
-                variant="contained"
-                component={Link}
-                to="/login"
-                sx={{ ml: 2 }}
-              >
-                Login
-              </Button>
-            )}
-          </Box>
+          <MotionIconButton color="inherit" component={Link} to="/cart">
+            <Badge badgeContent={cartItemCount} color="secondary">
+              <CartIcon />
+            </Badge>
+          </MotionIconButton>
+
+          {user ? (
+            <>
+              <Tooltip title="Account settings">
+                <IconButton onClick={handleMenu} size="small" color="inherit">
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+                    {user.name ? user.name[0].toUpperCase() : <PersonIcon />}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
+              <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
+                <MenuItem component={Link} to="/profile" onClick={handleClose}>Profile</MenuItem>
+                <MenuItem component={Link} to="/order-history" onClick={handleClose}>Orders</MenuItem>
+                {user.role === 'admin' && <MenuItem component={Link} to="/admin" onClick={handleClose}>Admin</MenuItem>}
+                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+              </Menu>
+            </>
+          ) : (
+            <Button color="inherit" variant="outlined" component={Link} to="/login">
+              Login
+            </Button>
+          )}
         </Toolbar>
       </Container>
     </AppBar>

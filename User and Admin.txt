@@ -112,27 +112,3 @@ Role-based access control
 Secure admin dashboard
 Activity logging
 Data backup options
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

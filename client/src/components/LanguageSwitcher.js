@@ -1,12 +1,15 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ButtonGroup } from '@mui/material';
+import { startTransition } from 'react';
 
 const LanguageSwitcher = () => {
   const { i18n } = useTranslation();
 
   const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng);
+    startTransition(() => {
+      i18n.changeLanguage(lng);
+    });
   };
 
   return (
