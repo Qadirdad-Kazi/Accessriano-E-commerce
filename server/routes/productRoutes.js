@@ -54,10 +54,11 @@ const productController = require('../controllers/productController');
 
 // Public routes
 router.get('/', productController.getAllProducts);
+router.get('/filters', productController.getFilters);
+router.get('/search', productController.searchProducts);
 router.get('/category/:category', productController.getProductsByCategory);
 router.get('/featured', productController.getFeaturedProducts);
 router.get('/:id', productController.getProductById);
-router.get('/search/:query', productController.searchProducts);
 
 // Review routes (protected)
 router.post('/:productId/reviews', auth, productController.addReview);

@@ -75,16 +75,9 @@ const OrderHistory = () => {
     }
   };
 
-  // Set up polling for order updates
   useEffect(() => {
     fetchOrders();
-    
-    // Poll for updates every 30 seconds
-    const intervalId = setInterval(fetchOrders, 30000);
-    
-    // Cleanup interval on component unmount
-    return () => clearInterval(intervalId);
-  }, [navigate]);
+  }, []);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString();

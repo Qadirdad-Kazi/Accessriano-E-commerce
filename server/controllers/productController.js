@@ -130,26 +130,159 @@ exports.getProductById = async (req, res) => {
   }
 };
 
+// Get available filters
+exports.getFilters = async (req, res) => {
+  try {
+    // Get unique categories
+    const categories = await Product.distinct('category');
+
+    // Get unique brands
+    const brands = await Product.distinct('seller');
+
+    // Get price range
+    const priceRange = await Product.aggregate([
+      {
+        $group: {
+          _id: null,
+          min: { $min: '$price' },
+          max: { $max: '$price' }
+        }
+      }
+    ]);
+
+    // Get unique tags
+    const tags = await Product.distinct('tags');
+
+    res.status(200).json({
+      success: true,
+      data: {
+        categories,
+        brands,
+        priceRange: priceRange[0] || { min: 0, max: 0 },
+        tags
+      }
+    });
+  } catch (error) {
+    console.error('Error getting filters:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting filters',
+      error: error.message
+    });
+  }
+};
+
 // Search products
 exports.searchProducts = async (req, res) => {
   try {
-    const { query } = req.params;
-    const products = await Product.find({
-      $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } },
-      ],
+    const {
+      q = '',
+      page = 1,
+      limit = 12,
+      sortBy = 'newest',
+      category,
+      brand,
+      minPrice,
+      maxPrice,
+      minRating,
+      tags,
+      inStock
+    } = req.query;
+
+    // Build search query
+    const searchQuery = {
+      $and: [
+        {
+          $or: [
+            { name: { $regex: q, $options: 'i' } },
+            { description: { $regex: q, $options: 'i' } },
+            { category: { $regex: q, $options: 'i' } }
+          ]
+        }
+      ]
+    };
+
+    // Add filters
+    if (category) {
+      searchQuery.$and.push({ category });
+    }
+    if (brand) {
+      searchQuery.$and.push({ seller: brand });
+    }
+    if (minPrice || maxPrice) {
+      const priceQuery = {};
+      if (minPrice) priceQuery.$gte = Number(minPrice);
+      if (maxPrice) priceQuery.$lte = Number(maxPrice);
+      searchQuery.$and.push({ price: priceQuery });
+    }
+    if (minRating) {
+      searchQuery.$and.push({ 'rating.average': { $gte: Number(minRating) } });
+    }
+    if (tags) {
+      searchQuery.$and.push({ tags: { $in: tags.split(',') } });
+    }
+    if (inStock === 'true') {
+      searchQuery.$and.push({ stock: { $gt: 0 } });
+    }
+
+    // Build sort query
+    let sortQuery = {};
+    switch (sortBy) {
+      case 'price-asc':
+        sortQuery = { price: 1 };
+        break;
+      case 'price-desc':
+        sortQuery = { price: -1 };
+        break;
+      case 'rating-desc':
+        sortQuery = { 'rating.average': -1 };
+        break;
+      case 'popularity':
+        sortQuery = { soldCount: -1 };
+        break;
+      default: // newest
+        sortQuery = { createdAt: -1 };
+    }
+
+    // Execute query with pagination
+    const skip = (page - 1) * limit;
+    
+    const [products, total] = await Promise.all([
+      Product.find(searchQuery)
+        .sort(sortQuery)
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
+      Product.countDocuments(searchQuery)
+    ]);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(total / limit);
+
+    console.log('Search results:', {
+      query: q,
+      filters: searchQuery,
+      sort: sortQuery,
+      productsFound: products.length,
+      total,
+      page,
+      totalPages
     });
-    res.status(200).json({ 
+
+    res.status(200).json({
       success: true,
-      message: 'Search results retrieved successfully', 
-      data: products 
+      products,
+      total,
+      currentPage: Number(page),
+      totalPages,
+      hasMore: page < totalPages
     });
   } catch (error) {
-    res.status(500).json({ 
+    console.error('Error searching products:', error);
+    res.status(500).json({
       success: false,
-      message: 'Error searching products', 
-      error: error.message 
+      message: 'Error searching products',
+      error: error.message
     });
   }
 };
@@ -502,5 +635,6 @@ module.exports = {
   addProductReview: exports.addProductReview,
   deleteProductReview: exports.deleteProductReview,
   addReview: exports.addReview,
-  getProductReviews: exports.getProductReviews
+  getProductReviews: exports.getProductReviews,
+  getFilters: exports.getFilters
 };

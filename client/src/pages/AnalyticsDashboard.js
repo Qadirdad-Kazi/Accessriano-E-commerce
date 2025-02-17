@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Container, Typography, Grid, Paper, CircularProgress, Box } from '@mui/material';
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from 'react';
 import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  CircularProgress,
+  Alert,
+  Box
+} from '@mui/material';
+import {
   LineChart,
   Line,
   XAxis,
@@ -13,217 +17,201 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  BarChart,
+  Bar,
   PieChart,
   Pie,
   Cell,
+  ResponsiveContainer
 } from 'recharts';
+import axios from 'axios';
 import API_BASE_URL from '../config';
+import { useAuth } from '../context/AuthContext';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-const AnalyticsDashboard = () => {
-  const [analyticsData, setAnalyticsData] = useState(null);
+function AnalyticsDashboard() {
+  const [salesData, setSalesData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
+  const [error, setError] = useState(null);
+  const { user } = useAuth();
 
-  const fetchAnalytics = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error("No token found. Please log in as admin.");
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      if (!user || user.role !== 'admin') {
+        setError('You do not have permission to view analytics');
         setLoading(false);
         return;
       }
 
-      const config = {
-        headers: { 'Authorization': `Bearer ${token}` }
-      };
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
 
-      console.log('Fetching analytics with token:', token.substring(0, 20) + '...');
-      const res = await axios.get(`${API_BASE_URL}/analytics`, config);
-      
-      console.log('Analytics response:', res.data);
-      
-      if (res.data.success) {
-        setAnalyticsData(res.data.data);
-      } else {
-        throw new Error(res.data.message || 'Failed to fetch analytics data');
+        console.log('Fetching analytics data...');
+        const [salesResponse, categoryResponse] = await Promise.all([
+          axios.get(`${API_BASE_URL}/analytics/sales`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API_BASE_URL}/analytics/categories`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        console.log('Sales data:', salesResponse.data);
+        console.log('Category data:', categoryResponse.data);
+
+        setSalesData(salesResponse.data);
+        setCategoryData(categoryResponse.data);
+        setError(null);
+      } catch (err) {
+        console.error('Analytics fetch error:', err);
+        setError(
+          err.response?.data?.message ||
+          err.message ||
+          'Failed to fetch analytics data'
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching analytics data:', error);
-      toast.error(error.response?.data?.message || 'Failed to fetch analytics data');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
     fetchAnalytics();
-    
-    // Set up real-time updates
-    const interval = setInterval(fetchAnalytics, refreshInterval);
-    
-    return () => clearInterval(interval);
-  }, [refreshInterval]);
+  }, [user]);
 
   if (loading) {
     return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <CircularProgress />
       </Container>
     );
   }
 
-  if (!analyticsData) {
+  if (error) {
     return (
-      <Container>
-        <Typography variant="h6" color="error">
-          No analytics data available
-        </Typography>
+      <Container sx={{ mt: 4 }}>
+        <Alert severity="error" variant="filled">
+          {error}
+        </Alert>
       </Container>
     );
   }
 
-  const { orders, products, users, revenue, topProducts, revenueData } = analyticsData;
-
-  // Prepare data for product status pie chart
-  const productStatusData = [
-    { name: 'In Stock', value: products.inStock },
-    { name: 'Out of Stock', value: products.outOfStock }
-  ];
+  if (!salesData.length && !categoryData.length) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Alert severity="info">
+          No analytics data available. This could be because there are no orders yet.
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom color="primary">
         Analytics Dashboard
       </Typography>
       
-      {/* Orders and Revenue Overview */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140 }}>
-            <Typography color="textSecondary" gutterBottom>
-              Total Orders
-            </Typography>
-            <Typography variant="h4" component="div">
-              {orders.total}
-            </Typography>
-            <Typography color="textSecondary" sx={{ flex: 1 }}>
-              Last 24h: {orders.recent}
-            </Typography>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140 }}>
-            <Typography color="textSecondary" gutterBottom>
-              Total Revenue
-            </Typography>
-            <Typography variant="h4" component="div">
-              ${revenue.total.toFixed(2)}
-            </Typography>
-            <Typography color="textSecondary" sx={{ flex: 1 }}>
-              Avg. Order: ${revenue.average.toFixed(2)}
-            </Typography>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140 }}>
-            <Typography color="textSecondary" gutterBottom>
-              Products
-            </Typography>
-            <Typography variant="h4" component="div">
-              {products.total}
-            </Typography>
-            <Typography color="textSecondary" sx={{ flex: 1 }}>
-              Out of Stock: {products.outOfStock}
-            </Typography>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140 }}>
-            <Typography color="textSecondary" gutterBottom>
-              Users
-            </Typography>
-            <Typography variant="h4" component="div">
-              {users.total}
-            </Typography>
-            <Typography color="textSecondary" sx={{ flex: 1 }}>
-              Customers: {users.customers}
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      {/* Revenue Chart */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Monthly Revenue
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
-                <Legend />
-                <Line type="monotone" dataKey="revenue" stroke="#8884d8" />
-              </LineChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid>
-
-        {/* Product Status Pie Chart */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Product Status
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={productStatusData}
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {productStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value, name) => [value, name]} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid>
-
-        {/* Top Products */}
+        {/* Sales Over Time */}
         <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Top Selling Products
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topProducts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="quantity" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Paper>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Sales Over Time
+              </Typography>
+              <Box sx={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer>
+                  <LineChart data={salesData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="date"
+                      tickFormatter={(date) => new Date(date).toLocaleDateString()}
+                    />
+                    <YAxis />
+                    <Tooltip
+                      labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                      formatter={(value) => [`$${value}`, 'Sales']}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="amount" 
+                      stroke="#8884d8"
+                      name="Sales"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Category Distribution */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Sales by Category
+              </Typography>
+              <Box sx={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `$${value}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Category Sales Bar Chart */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Category Sales Distribution
+              </Typography>
+              <Box sx={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer>
+                  <BarChart data={categoryData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => `$${value}`} />
+                    <Legend />
+                    <Bar dataKey="value" fill="#8884d8" name="Sales">
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </Container>
   );
-};
+}
 
 export default AnalyticsDashboard;

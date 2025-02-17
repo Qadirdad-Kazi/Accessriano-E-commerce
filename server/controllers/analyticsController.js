@@ -2,6 +2,141 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
 
+// Get sales analytics
+exports.getSalesAnalytics = async (req, res) => {
+  try {
+    const monthlyRevenue = await Order.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+            day: { $dayOfMonth: "$createdAt" }
+          },
+          amount: { $sum: "$totalAmount" }
+        }
+      },
+      { 
+        $project: {
+          _id: 0,
+          date: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: {
+                $dateFromParts: {
+                  year: "$_id.year",
+                  month: "$_id.month",
+                  day: "$_id.day"
+                }
+              }
+            }
+          },
+          amount: 1
+        }
+      },
+      { $sort: { date: 1 } }
+    ]);
+
+    res.json(monthlyRevenue);
+  } catch (error) {
+    console.error('Error fetching sales analytics:', error);
+    res.status(500).json({ message: 'Error fetching sales analytics' });
+  }
+};
+
+// Get category analytics
+exports.getCategoryAnalytics = async (req, res) => {
+  try {
+    const categoryData = await Order.aggregate([
+      { $unwind: "$items" },
+      {
+        $lookup: {
+          from: "products",
+          localField: "items.product",
+          foreignField: "_id",
+          as: "productDetails"
+        }
+      },
+      { $unwind: "$productDetails" },
+      {
+        $group: {
+          _id: "$productDetails.category",
+          value: { $sum: { $multiply: ["$items.quantity", "$items.price"] } }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          name: "$_id",
+          value: 1
+        }
+      }
+    ]);
+
+    res.json(categoryData);
+  } catch (error) {
+    console.error('Error fetching category analytics:', error);
+    res.status(500).json({ message: 'Error fetching category analytics' });
+  }
+};
+
+// Get dashboard analytics
+exports.getDashboardAnalytics = async (req, res) => {
+  try {
+    // Get basic statistics
+    const [totalOrders, totalProducts, totalUsers] = await Promise.all([
+      Order.countDocuments(),
+      Product.countDocuments(),
+      User.countDocuments()
+    ]);
+
+    // Get recent orders (last 24 hours)
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentOrders = await Order.countDocuments({
+      createdAt: { $gte: yesterday }
+    });
+
+    // Get revenue statistics
+    const revenueStats = await Order.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$totalAmount" },
+          averageOrderValue: { $avg: "$totalAmount" }
+        }
+      }
+    ]);
+
+    // Get product statistics
+    const productStats = {
+      total: totalProducts,
+      inStock: await Product.countDocuments({ countInStock: { $gt: 0 } }),
+      outOfStock: await Product.countDocuments({ countInStock: 0 })
+    };
+
+    // Get user statistics
+    const userStats = {
+      total: totalUsers,
+      admins: await User.countDocuments({ role: 'admin' }),
+      customers: await User.countDocuments({ role: 'user' })
+    };
+
+    res.json({
+      orders: {
+        total: totalOrders,
+        recent: recentOrders
+      },
+      revenue: revenueStats[0] || { totalRevenue: 0, averageOrderValue: 0 },
+      products: productStats,
+      users: userStats
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard analytics:', error);
+    res.status(500).json({ message: 'Error fetching dashboard analytics' });
+  }
+};
+
+// Get analytics
 exports.getAnalytics = async (req, res) => {
   try {
     console.log('Fetching analytics data...');
