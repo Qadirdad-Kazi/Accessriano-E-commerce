@@ -376,7 +376,7 @@ const AdminDashboard = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => navigate('/admin/add-product')}
+            onClick={() => navigate('/admin/create-product')}
             sx={{ mb: 2 }}
           >
             Add New Product

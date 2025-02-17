@@ -1,27 +1,15 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import { Box, CircularProgress } from '@mui/material';
+import CssBaseline from '@mui/material/CssBaseline';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { CircularProgress, Box } from '@mui/material';
-
-import Header from './components/Header';
-import Home from './pages/Home';
-import ProductDetail from './pages/ProductDetail';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import OrderConfirmation from './pages/OrderConfirmation';
-import OrderHistory from './pages/OrderHistory';
-import AdminDashboard from './pages/AdminDashboard';
-import CreateProduct from './pages/CreateProduct';
-import EditProduct from './pages/EditProduct';
-import Profile from './pages/Profile';
-import AnalyticsDashboard from './pages/AnalyticsDashboard';
-import ChatbotWidget from './components/ChatbotWidget';
-import ProtectedRoute from './components/ProtectedRoute';
+import theme from './theme';
+import AppRoutes from './routes';
+import Navbar from './components/Navbar';
+import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-import AdminOrders from './pages/AdminOrders';
 
 const LoadingFallback = () => (
   <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -31,106 +19,40 @@ const LoadingFallback = () => (
 
 function App() {
   return (
-    <CartProvider>
-      <Router>
-        <Suspense fallback={<LoadingFallback />}>
-          <Header />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route 
-              path="/checkout" 
-              element={
-                <ProtectedRoute>
-                  <Checkout />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/order-confirmation" 
-              element={
-                <ProtectedRoute>
-                  <OrderConfirmation />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/order-history" 
-              element={
-                <ProtectedRoute>
-                  <OrderHistory />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/create-product" 
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <CreateProduct />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/edit-product/:id" 
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <EditProduct />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/analytics" 
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AnalyticsDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/orders" 
-              element={
-                <ProtectedRoute adminOnly>
-                  <AdminOrders />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } 
-            />
-          </Routes>
-          <Suspense fallback={<LoadingFallback />}>
-            <ChatbotWidget />
-          </Suspense>
-        </Suspense>
-        <ToastContainer 
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
-      </Router>
-    </CartProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <CartProvider>
+          <Router>
+            <div style={{ 
+              minHeight: '100vh',
+              background: theme.palette.background.default,
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <Navbar />
+              <main style={{ flex: 1, paddingTop: '20px', paddingBottom: '40px' }}>
+                <Suspense fallback={<LoadingFallback />}>
+                  <AppRoutes />
+                </Suspense>
+              </main>
+              <ToastContainer
+                position="bottom-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="colored"
+              />
+            </div>
+          </Router>
+        </CartProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

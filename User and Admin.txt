@@ -1,0 +1,138 @@
+
+Regular User Functionalities:
+Account Management:
+Register a new account
+Login/Logout
+View and edit profile information
+View order history
+Manage shipping addresses
+Product Browsing:
+View product listings
+Use advanced search with filters
+Get search suggestions
+View detailed product information
+See product ratings and reviews
+View related products
+Use image zoom and gallery features
+Filter products by:
+Category
+Price range
+Brand
+Rating
+Availability
+Tags
+Shopping Features:
+Add products to cart
+Select product variants (color, size, etc.)
+Choose product quantity
+Add items to wishlist
+Share products on social media
+View product specifications
+Read product descriptions
+See shipping information
+Cart & Checkout:
+View shopping cart
+Update item quantities
+Remove items from cart
+Proceed to checkout
+Select shipping method
+Choose payment method
+Place orders
+View order confirmation
+Review System:
+Write product reviews
+Rate products (1-5 stars)
+Upload review images
+Mark reviews as helpful
+Report inappropriate reviews
+Admin Functionalities:
+Product Management:
+Create new products
+Edit existing products
+Delete products
+Manage product:
+Images
+Variants
+Pricing
+Stock levels
+Categories
+Tags
+Specifications
+Description
+Order Management:
+View all orders
+Update order status
+Process refunds
+Manage shipping
+View order details
+Export order data
+User Management:
+View user accounts
+Manage user roles
+Handle user reports
+Monitor user activity
+Review Management:
+Moderate reviews
+Remove inappropriate content
+Respond to reviews
+Handle reported reviews
+Analytics Dashboard:
+View sales statistics
+Monitor revenue
+Track popular products
+Analyze user behavior
+View search analytics
+Monitor stock levels
+Content Management:
+Manage product categories
+Update product specifications
+Handle product variants
+Manage product images
+Update shipping information
+System Configuration:
+Configure shipping methods
+Set up payment gateways
+Manage site settings
+Configure search settings
+Set up promotional features
+Inventory Management:
+Track stock levels
+Set stock alertst
+Manage product variants
+Update product availability
+Security Features:
+
+For Users:
+Secure authentication
+Password reset functionality
+Order history protection
+Personal data security
+For Admins:
+Role-based access control
+Secure admin dashboard
+Activity logging
+Data backup options
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
