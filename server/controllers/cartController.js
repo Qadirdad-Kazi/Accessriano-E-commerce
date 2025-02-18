@@ -4,12 +4,19 @@ const { catchAsync } = require('../utils/errorHandler');
 
 // Get user's cart
 exports.getCart = catchAsync(async (req, res) => {
-    let cart = await Cart.findOne({ user: req.user._id })
+    if (!req.user || !req.user.id) {
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
+
+    let cart = await Cart.findOne({ user: req.user.id })
         .populate('items.product');
 
     if (!cart) {
         cart = await Cart.create({
-            user: req.user._id,
+            user: req.user.id,
             items: []
         });
     }
@@ -22,6 +29,13 @@ exports.getCart = catchAsync(async (req, res) => {
 
 // Add item to cart
 exports.addToCart = catchAsync(async (req, res) => {
+    if (!req.user || !req.user.id) {
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
+
     const { productId, quantity } = req.body;
 
     // Validate product exists
@@ -41,11 +55,11 @@ exports.addToCart = catchAsync(async (req, res) => {
         });
     }
 
-    let cart = await Cart.findOne({ user: req.user._id });
+    let cart = await Cart.findOne({ user: req.user.id });
 
     if (!cart) {
         cart = await Cart.create({
-            user: req.user._id,
+            user: req.user.id,
             items: [{ product: productId, quantity }]
         });
     } else {
@@ -55,14 +69,17 @@ exports.addToCart = catchAsync(async (req, res) => {
         );
 
         if (existingItem) {
+            // Update quantity if product exists
             existingItem.quantity = quantity;
         } else {
+            // Add new item if product doesn't exist
             cart.items.push({ product: productId, quantity });
         }
 
         await cart.save();
     }
 
+    // Populate product details before sending response
     await cart.populate('items.product');
 
     res.status(200).json({
@@ -73,10 +90,16 @@ exports.addToCart = catchAsync(async (req, res) => {
 
 // Update cart item quantity
 exports.updateCartItem = catchAsync(async (req, res) => {
-    const { productId } = req.params;
-    const { quantity } = req.body;
+    if (!req.user || !req.user.id) {
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
 
-    const cart = await Cart.findOne({ user: req.user._id });
+    const { productId, quantity } = req.body;
+
+    const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
         return res.status(404).json({
             success: false,
@@ -95,8 +118,15 @@ exports.updateCartItem = catchAsync(async (req, res) => {
         });
     }
 
-    // Validate stock
+    // Check stock
     const product = await Product.findById(productId);
+    if (!product) {
+        return res.status(404).json({
+            success: false,
+            message: 'Product not found'
+        });
+    }
+
     if (product.stock < quantity) {
         return res.status(400).json({
             success: false,
@@ -116,9 +146,16 @@ exports.updateCartItem = catchAsync(async (req, res) => {
 
 // Remove item from cart
 exports.removeFromCart = catchAsync(async (req, res) => {
+    if (!req.user || !req.user.id) {
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
+
     const { productId } = req.params;
 
-    const cart = await Cart.findOne({ user: req.user._id });
+    const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
         return res.status(404).json({
             success: false,
@@ -141,7 +178,14 @@ exports.removeFromCart = catchAsync(async (req, res) => {
 
 // Clear cart
 exports.clearCart = catchAsync(async (req, res) => {
-    const cart = await Cart.findOne({ user: req.user._id });
+    if (!req.user || !req.user.id) {
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
+
+    const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
         return res.status(404).json({
             success: false,

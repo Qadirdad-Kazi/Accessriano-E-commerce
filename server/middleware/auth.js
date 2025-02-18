@@ -18,7 +18,7 @@ module.exports = async function (req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
     
     // Check if user still exists
-    const user = await User.findById(decoded.user.id);
+    const user = await User.findById(decoded.user.id || decoded.user._id);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -26,21 +26,22 @@ module.exports = async function (req, res, next) {
       });
     }
 
-    // Add user to request
+    // Add user to request with consistent id field
     req.user = {
-      _id: user._id,
-      id: user._id,
-      name: user.name,
+      id: user._id.toString(), // Ensure id is a string
+      _id: user._id.toString(), // Keep _id for backward compatibility
       email: user.email,
+      name: user.name,
       role: user.role
     };
-    
+
     next();
-  } catch (err) {
-    console.error('Token verification error:', err);
+  } catch (error) {
+    console.error('Auth middleware error:', error);
     res.status(401).json({ 
       success: false,
-      message: 'Invalid token' 
+      message: 'Invalid token.',
+      error: error.message
     });
   }
 };

@@ -2,18 +2,27 @@ const User = require('../models/User');
 
 module.exports = async function(req, res, next) {
   try {
-    const user = await User.findById(req.user.id);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Not authorized to access this route' 
+      });
     }
 
-    if (user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Access denied. Admin only.' 
+      });
     }
 
     next();
   } catch (err) {
-    res.status(500).json({ message: 'Server Error' });
+    console.error('Admin middleware error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server Error',
+      error: err.message 
+    });
   }
 };

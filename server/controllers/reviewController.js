@@ -187,7 +187,7 @@ exports.reportReview = catchAsync(async (req, res) => {
 // Admin only endpoints
 exports.getReportedReviews = catchAsync(async (req, res) => {
     // Check if user is admin
-    if (!req.user.isAdmin) {
+    if (!req.user || req.user.role !== 'admin') {
         throw new AppError('Not authorized to access this route', 403);
     }
 
@@ -204,7 +204,7 @@ exports.getReportedReviews = catchAsync(async (req, res) => {
 
 exports.getAllReviews = catchAsync(async (req, res) => {
     // Check if user is admin
-    if (!req.user.isAdmin) {
+    if (!req.user || req.user.role !== 'admin') {
         throw new AppError('Not authorized to access this route', 403);
     }
 
@@ -235,7 +235,7 @@ exports.getAllReviews = catchAsync(async (req, res) => {
 
 exports.moderateReview = catchAsync(async (req, res) => {
     // Check if user is admin
-    if (!req.user.isAdmin) {
+    if (!req.user || req.user.role !== 'admin') {
         throw new AppError('Not authorized to access this route', 403);
     }
 

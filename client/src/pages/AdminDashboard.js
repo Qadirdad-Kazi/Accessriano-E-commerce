@@ -27,6 +27,7 @@ import {
   Tooltip,
   IconButton,
   TableContainer,
+  Rating,
 } from '@mui/material';
 import {
   LocalShipping as ShippingIcon,
@@ -35,6 +36,9 @@ import {
   Schedule as PendingIcon,
   Visibility as VisibilityIcon,
   RateReview as ReviewIcon,
+  Delete as DeleteIcon,
+  NavigateBefore as NavigateBeforeIcon,
+  NavigateNext as NavigateNextIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -192,13 +196,16 @@ const AdminDashboard = () => {
   const [reviews, setReviews] = useState([]);
   const [reviewsPage, setReviewsPage] = useState(1);
   const [reviewsTotal, setReviewsTotal] = useState(0);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [updatingOrder, setUpdatingOrder] = useState(null);
   const navigate = useNavigate();
   const reviewsPerPage = 10;
+  const axiosInstance = axios.create({
+    baseURL: API_BASE_URL,
+  });
 
   // Order summary calculations
   const getOrderSummary = () => {
@@ -224,9 +231,10 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
       const config = { headers: { "x-auth-token": token } };
       const res = await axios.get(`${API_BASE_URL}/products`, config);
-      setProducts(res.data.data);
+      setProducts(res.data.data || []);
     } catch (error) {
       toast.error("Failed to fetch products.");
+      setProducts([]);
     } finally {
       setLoadingProducts(false);
     }
@@ -238,9 +246,10 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
       const config = { headers: { "x-auth-token": token } };
       const res = await axios.get(`${API_BASE_URL}/orders`, config);
-      setOrders(res.data.data);
+      setOrders(res.data.data || []);
     } catch (error) {
       toast.error("Failed to fetch orders.");
+      setOrders([]);
     } finally {
       setLoadingOrders(false);
     }
@@ -251,27 +260,79 @@ const AdminDashboard = () => {
     setReviewsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/reviews?page=${page}&limit=${reviewsPerPage}`, {
-        headers: { 'x-auth-token': token }
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axiosInstance.get(`/reviews`, {
+        params: {
+          page,
+          limit: reviewsPerPage
+        },
+        headers: { 
+          'x-auth-token': token,
+          'Content-Type': 'application/json'
+        }
       });
-      setReviews(response.data.data);
-      setReviewsTotal(response.data.pagination.total);
-      setReviewsPage(page);
+      
+      if (response.data.success) {
+        setReviews(response.data.data || []);
+        setReviewsTotal(response.data.pagination?.total || 0);
+        setReviewsPage(page);
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch reviews');
+      }
     } catch (error) {
       console.error('Error fetching reviews:', error);
-      toast.error('Failed to fetch reviews');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch reviews';
+      toast.error(errorMessage);
+      setReviews([]);
+      setReviewsTotal(0);
+      
+      // Handle auth errors
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        navigate('/login');
+      }
     } finally {
       setReviewsLoading(false);
     }
   };
 
+  // Delete review
+  const handleDeleteReview = async (reviewId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      console.log('Deleting review:', reviewId);
+      const response = await axiosInstance.delete(`/reviews/${reviewId}`, {
+        headers: { 
+          'x-auth-token': token
+        }
+      });
+      
+      console.log('Delete response:', response.data);
+      
+      if (response.data.success) {
+        toast.success("Review deleted successfully!");
+        // Recalculate the current page number if it's the last item on the page
+        const newPage = reviews.length === 1 && reviewsPage > 1 ? reviewsPage - 1 : reviewsPage;
+        fetchReviews(newPage);
+      } else {
+        throw new Error(response.data.message || 'Failed to delete review');
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error.response || error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete review';
+      toast.error(errorMessage);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
-      setLoadingProducts(true);
-      setLoadingOrders(true);
       await Promise.all([fetchProducts(), fetchOrders(), fetchReviews()]);
-      setLoadingProducts(false);
-      setLoadingOrders(false);
     };
     fetchData();
     // Poll for updates every 30 seconds
@@ -364,7 +425,7 @@ const AdminDashboard = () => {
               <TableCell>Rating</TableCell>
               <TableCell>Comment</TableCell>
               <TableCell>Date</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -383,22 +444,83 @@ const AdminDashboard = () => {
             ) : (
               reviews.map((review) => (
                 <TableRow key={review._id}>
-                  <TableCell>{review.product?.name || 'N/A'}</TableCell>
-                  <TableCell>{review.user?.name || 'N/A'}</TableCell>
-                  <TableCell>{review.rating}</TableCell>
-                  <TableCell>{review.comment}</TableCell>
                   <TableCell>
-                    {new Date(review.createdAt).toLocaleDateString()}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {review.product?.image && (
+                        <Box
+                          component="img"
+                          src={review.product.image}
+                          alt={review.product?.name}
+                          sx={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 1 }}
+                        />
+                      )}
+                      <Typography variant="body2">
+                        {review.product?.name || 'N/A'}
+                      </Typography>
+                    </Box>
                   </TableCell>
                   <TableCell>
-                    <Tooltip title="View Details">
-                      <IconButton
-                        size="small"
-                        onClick={() => navigate(`/product/${review.productId}`)}
-                      >
-                        <VisibilityIcon />
-                      </IconButton>
-                    </Tooltip>
+                    <Typography variant="body2">
+                      {review.user?.name || 'N/A'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {review.user?.email}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Rating value={review.rating} readOnly size="small" />
+                      <Typography variant="body2" sx={{ ml: 1 }}>
+                        ({review.rating})
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        maxWidth: 300,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {review.comment}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {new Date(review.createdAt).toLocaleDateString()}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(review.createdAt).toLocaleTimeString()}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                      <Tooltip title="View Product">
+                        <IconButton
+                          size="small"
+                          onClick={() => navigate(`/product/${review.product?._id}`)}
+                          color="primary"
+                        >
+                          <VisibilityIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete Review">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this review?')) {
+                              handleDeleteReview(review._id);
+                            }
+                          }}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))
@@ -407,19 +529,23 @@ const AdminDashboard = () => {
         </Table>
       </TableContainer>
       {!reviewsLoading && reviews.length > 0 && (
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
           <Button
+            variant="outlined"
             disabled={reviewsPage === 1}
             onClick={() => handleReviewPageChange(reviewsPage - 1)}
+            startIcon={<NavigateBeforeIcon />}
           >
             Previous
           </Button>
-          <Typography sx={{ mx: 2, alignSelf: 'center' }}>
+          <Typography variant="body2">
             Page {reviewsPage} of {Math.ceil(reviewsTotal / reviewsPerPage)}
           </Typography>
           <Button
+            variant="outlined"
             disabled={reviewsPage >= Math.ceil(reviewsTotal / reviewsPerPage)}
             onClick={() => handleReviewPageChange(reviewsPage + 1)}
+            endIcon={<NavigateNextIcon />}
           >
             Next
           </Button>
@@ -436,240 +562,238 @@ const AdminDashboard = () => {
 
   return (
     <Container sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Admin Dashboard
-      </Typography>
-
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <SummaryCard
-            title="Pending Payments"
-            value={summary.pendingPayments}
-            icon={PaymentIcon}
-            color="#f44336"
-            secondaryText={`$${summary.pendingPaymentsAmount.toFixed(2)} pending`}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <SummaryCard
-            title="Pending Shipments"
-            value={summary.pendingShipments}
-            icon={ShippingIcon}
-            color="#2196f3"
-            secondaryText="Orders awaiting shipment"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <SummaryCard
-            title="Total Revenue"
-            value={`$${summary.totalRevenue.toFixed(2)}`}
-            icon={MoneyIcon}
-            color="#4caf50"
-            secondaryText="From completed payments"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <SummaryCard
-            title="Processing Orders"
-            value={orders.filter(o => o.status === 'processing').length}
-            icon={PendingIcon}
-            color="#ff9800"
-            secondaryText="Orders being processed"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <SummaryCard
-            title="Total Reviews"
-            value={reviews.length}
-            icon={ReviewIcon}
-            color="#9c27b0"
-            secondaryText="All product reviews"
-          />
-        </Grid>
-      </Grid>
-
-      <Tabs value={tabIndex} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
-        <Tab label="Products" />
-        <Tab label="Orders" />
-        <Tab label="Analytics" />
-        <Tab label="Reviews" />
-      </Tabs>
-
-      {tabIndex === 0 && (
-        <Box sx={{ mt: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate('/admin/create-product')}
-            sx={{ mb: 2 }}
-          >
-            Add New Product
-          </Button>
-          <Paper>
-            {loadingProducts ? (
-              <Box display="flex" justifyContent="center" p={3}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Price</TableCell>
-                    <TableCell>Stock</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {products.map((product) => (
-                    <TableRow key={product._id}>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>${product.price}</TableCell>
-                      <TableCell>{product.stock}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outlined"
-                          color="primary"
-                          size="small"
-                          onClick={() => navigate(`/admin/edit-product/${product._id}`)}
-                          sx={{ mr: 1 }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          onClick={() => handleDeleteProduct(product._id)}
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </Paper>
+      {loadingProducts || loadingOrders ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+          <CircularProgress />
         </Box>
+      ) : (
+        <>
+          <Typography variant="h4" gutterBottom>
+            Admin Dashboard
+          </Typography>
+
+          {/* Summary Cards */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <SummaryCard
+                title="Pending Payments"
+                value={summary.pendingPayments}
+                icon={PaymentIcon}
+                color="#f44336"
+                secondaryText={`$${summary.pendingPaymentsAmount.toFixed(2)} pending`}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <SummaryCard
+                title="Pending Shipments"
+                value={summary.pendingShipments}
+                icon={ShippingIcon}
+                color="#2196f3"
+                secondaryText="Orders awaiting shipment"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <SummaryCard
+                title="Total Revenue"
+                value={`$${summary.totalRevenue.toFixed(2)}`}
+                icon={MoneyIcon}
+                color="#4caf50"
+                secondaryText="From completed payments"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <SummaryCard
+                title="Processing Orders"
+                value={orders.filter(o => o.status === 'processing').length}
+                icon={PendingIcon}
+                color="#ff9800"
+                secondaryText="Orders being processed"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <SummaryCard
+                title="Total Reviews"
+                value={reviews.length}
+                icon={ReviewIcon}
+                color="#9c27b0"
+                secondaryText="All product reviews"
+              />
+            </Grid>
+          </Grid>
+
+          <Tabs value={tabIndex} onChange={handleTabChange}>
+            <Tab label="Products" />
+            <Tab label="Orders" />
+            <Tab label="Analytics" />
+            <Tab label="Reviews" />
+          </Tabs>
+
+          {/* Tab Content */}
+          <Box sx={{ mt: 3 }}>
+            {tabIndex === 0 && (
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate('/admin/create-product')}
+                  sx={{ mb: 2 }}
+                >
+                  Add New Product
+                </Button>
+                <Paper>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Price</TableCell>
+                        <TableCell>Stock</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {products.map((product) => (
+                        <TableRow key={product._id}>
+                          <TableCell>{product.name}</TableCell>
+                          <TableCell>${product.price}</TableCell>
+                          <TableCell>{product.stock}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outlined"
+                              color="primary"
+                              size="small"
+                              onClick={() => navigate(`/admin/edit-product/${product._id}`)}
+                              sx={{ mr: 1 }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              onClick={() => handleDeleteProduct(product._id)}
+                            >
+                              Delete
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Box>
+            )}
+            {tabIndex === 1 && (
+              <Box sx={{ mt: 2 }}>
+                <Paper>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Order ID</TableCell>
+                        <TableCell>Customer</TableCell>
+                        <TableCell>Total</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Payment</TableCell>
+                        <TableCell>Shipping</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow key={order._id}>
+                          <TableCell>{order._id.slice(-6).toUpperCase()}</TableCell>
+                          <TableCell>{order.user?.name || 'N/A'}</TableCell>
+                          <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <FormControl size="small" fullWidth>
+                              <Select
+                                value={order.status}
+                                onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                                disabled={updatingOrder === order._id}
+                                renderValue={(value) => (
+                                  <Chip 
+                                    label={value} 
+                                    size="small"
+                                    color={STATUS_COLORS[value]}
+                                  />
+                                )}
+                              >
+                                {ORDER_STATUSES.map((status) => (
+                                  <MenuItem key={status} value={status}>
+                                    <Chip 
+                                      label={status} 
+                                      size="small"
+                                      color={STATUS_COLORS[status]}
+                                    />
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </TableCell>
+                          <TableCell>
+                            <FormControl size="small" fullWidth>
+                              <Select
+                                value={order.paymentStatus}
+                                onChange={(e) => handleStatusChange(order._id, e.target.value, 'paymentStatus')}
+                                disabled={updatingOrder === order._id}
+                                renderValue={(value) => (
+                                  <Chip 
+                                    label={value} 
+                                    size="small"
+                                    color={STATUS_COLORS[value]}
+                                  />
+                                )}
+                              >
+                                {PAYMENT_STATUSES.map((status) => (
+                                  <MenuItem key={status} value={status}>
+                                    <Chip 
+                                      label={status} 
+                                      size="small"
+                                      color={STATUS_COLORS[status]}
+                                    />
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="caption" display="block">
+                              {order.shippingAddress.city}, {order.shippingAddress.country}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Tooltip title="View Details">
+                              <IconButton 
+                                size="small"
+                                onClick={() => setSelectedOrder(order)}
+                              >
+                                <VisibilityIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              onClick={() => handleDeleteOrder(order._id)}
+                              sx={{ ml: 1 }}
+                            >
+                              Delete
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Box>
+            )}
+            {tabIndex === 2 && <AnalyticsDashboard />}
+            {tabIndex === 3 && <ReviewsTable />}
+          </Box>
+        </>
       )}
 
-      {tabIndex === 1 && (
-        <Box sx={{ mt: 2 }}>
-          <Paper>
-            {loadingOrders ? (
-              <Box display="flex" justifyContent="center" p={3}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Order ID</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Total</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Payment</TableCell>
-                    <TableCell>Shipping</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow key={order._id}>
-                      <TableCell>{order._id.slice(-6).toUpperCase()}</TableCell>
-                      <TableCell>{order.user?.name || 'N/A'}</TableCell>
-                      <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <FormControl size="small" fullWidth>
-                          <Select
-                            value={order.status}
-                            onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                            disabled={updatingOrder === order._id}
-                            renderValue={(value) => (
-                              <Chip 
-                                label={value} 
-                                size="small"
-                                color={STATUS_COLORS[value]}
-                              />
-                            )}
-                          >
-                            {ORDER_STATUSES.map((status) => (
-                              <MenuItem key={status} value={status}>
-                                <Chip 
-                                  label={status} 
-                                  size="small"
-                                  color={STATUS_COLORS[status]}
-                                />
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </TableCell>
-                      <TableCell>
-                        <FormControl size="small" fullWidth>
-                          <Select
-                            value={order.paymentStatus}
-                            onChange={(e) => handleStatusChange(order._id, e.target.value, 'paymentStatus')}
-                            disabled={updatingOrder === order._id}
-                            renderValue={(value) => (
-                              <Chip 
-                                label={value} 
-                                size="small"
-                                color={STATUS_COLORS[value]}
-                              />
-                            )}
-                          >
-                            {PAYMENT_STATUSES.map((status) => (
-                              <MenuItem key={status} value={status}>
-                                <Chip 
-                                  label={status} 
-                                  size="small"
-                                  color={STATUS_COLORS[status]}
-                                />
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="caption" display="block">
-                          {order.shippingAddress.city}, {order.shippingAddress.country}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title="View Details">
-                          <IconButton 
-                            size="small"
-                            onClick={() => setSelectedOrder(order)}
-                          >
-                            <VisibilityIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          onClick={() => handleDeleteOrder(order._id)}
-                          sx={{ ml: 1 }}
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </Paper>
-        </Box>
-      )}
-
-      {tabIndex === 2 && <AnalyticsDashboard />}
-      {tabIndex === 3 && <ReviewsTable />}
       <OrderDetailsDialog 
-        open={!!selectedOrder}
+        open={!!selectedOrder} 
         order={selectedOrder}
         onClose={() => setSelectedOrder(null)}
       />
