@@ -10,11 +10,14 @@ import {
   CircularProgress,
   Alert,
   Divider,
+  LinearProgress,
 } from '@mui/material';
-import api from '../../utils/api';
 import { formatDistance } from 'date-fns';
+import axiosInstance from '../../utils/axios';
+import { useAuth } from '../../context/AuthContext';
 
 const ReviewSection = ({ productId }) => {
+  const { isAuthenticated } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,25 +34,37 @@ const ReviewSection = ({ productId }) => {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const response = await api.get(
-        `/products/${productId}/reviews?page=${page}`
-      );
+      const response = await axiosInstance.get(`/reviews/product/${productId}?page=${page}&limit=5`);
       
       if (response.data.success) {
         const newReviews = response.data.data || [];
         setReviews(prevReviews => 
           page === 1 ? newReviews : [...prevReviews, ...newReviews]
         );
-        setHasMore(response.data.pagination?.hasNextPage || false);
         
-        // Update stats if it's the first page
-        if (page === 1 && response.data.stats) {
-          setStats(response.data.stats);
+        // Update pagination
+        const { pagination } = response.data;
+        setHasMore(pagination.current < pagination.pages);
+        
+        // Calculate stats from reviews if it's the first page
+        if (page === 1) {
+          const totalReviews = pagination.total;
+          const averageRating = newReviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews;
+          const ratingDistribution = newReviews.reduce((acc, review) => {
+            acc[review.rating] = (acc[review.rating] || 0) + 1;
+            return acc;
+          }, {1: 0, 2: 0, 3: 0, 4: 0, 5: 0});
+
+          setStats({
+            averageRating,
+            totalReviews,
+            ratingDistribution
+          });
         }
       }
     } catch (error) {
       console.error('Error fetching reviews:', error);
-      setError('Failed to load reviews');
+      setError(error.response?.data?.message || 'Failed to load reviews');
     } finally {
       setLoading(false);
     }
@@ -73,6 +88,12 @@ const ReviewSection = ({ productId }) => {
     );
   }
 
+  const getRatingPercentage = (rating) => {
+    return stats.totalReviews > 0 
+      ? (stats.ratingDistribution[rating] / stats.totalReviews) * 100 
+      : 0;
+  };
+
   return (
     <Box sx={{ mt: 4 }}>
       <Typography variant="h5" gutterBottom>
@@ -87,8 +108,8 @@ const ReviewSection = ({ productId }) => {
               <Typography variant="h3" gutterBottom>
                 {stats.averageRating.toFixed(1)}
               </Typography>
-              <Rating value={stats.averageRating} precision={0.5} readOnly />
-              <Typography variant="body2" color="text.secondary">
+              <Rating value={stats.averageRating} precision={0.5} readOnly size="large" />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 Based on {stats.totalReviews} reviews
               </Typography>
             </Box>
@@ -100,25 +121,17 @@ const ReviewSection = ({ productId }) => {
                   <Typography variant="body2" sx={{ minWidth: 20 }}>
                     {rating}★
                   </Typography>
-                  <Box
-                    sx={{
-                      flexGrow: 1,
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={getRatingPercentage(rating)}
+                    sx={{ 
+                      flex: 1,
                       height: 8,
-                      bgcolor: 'grey.200',
-                      borderRadius: 1,
-                      overflow: 'hidden'
+                      borderRadius: 1
                     }}
-                  >
-                    <Box
-                      sx={{
-                        width: `${(stats.ratingDistribution[rating] / stats.totalReviews) * 100 || 0}%`,
-                        height: '100%',
-                        bgcolor: 'primary.main'
-                      }}
-                    />
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ minWidth: 40 }}>
-                    {stats.ratingDistribution[rating] || 0}
+                  />
+                  <Typography variant="body2" sx={{ minWidth: 40 }}>
+                    {stats.ratingDistribution[rating]}
                   </Typography>
                 </Box>
               ))}
@@ -129,60 +142,56 @@ const ReviewSection = ({ productId }) => {
 
       {/* Reviews List */}
       <Box sx={{ mt: 3 }}>
-        {loading && page === 1 ? (
-          <CircularProgress />
+        {reviews.length === 0 && !loading ? (
+          <Alert severity="info">No reviews yet. Be the first to review this product!</Alert>
         ) : (
-          <>
-            {Array.isArray(reviews) && reviews.length > 0 ? (
-              <>
-                {reviews.map((review, index) => (
-                  <Paper key={review._id || index} sx={{ p: 3, mb: 2 }}>
-                    <Grid container spacing={2}>
-                      <Grid item>
-                        <Avatar sx={{ bgcolor: 'primary.main' }}>
-                          {review.user?.name?.[0] || 'U'}
-                        </Avatar>
-                      </Grid>
-                      <Grid item xs>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                          <Typography variant="subtitle1" component="div" fontWeight="medium">
-                            {review.user?.name || 'Anonymous'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            • {review.createdAt && formatDistance(new Date(review.createdAt), new Date(), { addSuffix: true })}
-                          </Typography>
-                        </Box>
-                        <Rating value={review.rating} readOnly size="small" sx={{ mb: 1 }} />
-                        {review.title && (
-                          <Typography variant="subtitle2" sx={{ mb: 1 }} fontWeight="medium">
-                            {review.title}
-                          </Typography>
-                        )}
-                        <Typography variant="body2" color="text.secondary">
-                          {review.content}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                ))}
-                {hasMore && (
-                  <Box display="flex" justifyContent="center" mt={2}>
-                    <Button
-                      onClick={handleLoadMore}
-                      disabled={loading}
-                      variant="outlined"
-                    >
-                      {loading ? 'Loading...' : 'Load More Reviews'}
-                    </Button>
-                  </Box>
-                )}
-              </>
-            ) : (
-              <Typography color="text.secondary" align="center">
-                No reviews yet for this product.
+          reviews.map((review, index) => (
+            <Paper key={review._id} sx={{ p: 3, mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar src={review.user.avatar} alt={review.user.name}>
+                  {review.user.name.charAt(0)}
+                </Avatar>
+                <Box sx={{ ml: 2 }}>
+                  <Typography variant="subtitle1">{review.user.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDistance(new Date(review.createdAt), new Date(), { addSuffix: true })}
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Rating value={review.rating} readOnly sx={{ mb: 1 }} />
+              
+              {review.title && (
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+                  {review.title}
+                </Typography>
+              )}
+              
+              <Typography variant="body1" color="text.secondary" paragraph>
+                {review.review}
               </Typography>
-            )}
-          </>
+              
+              {index !== reviews.length - 1 && <Divider sx={{ mt: 2 }} />}
+            </Paper>
+          ))
+        )}
+
+        {loading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {hasMore && !loading && reviews.length > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+            <Button 
+              variant="outlined" 
+              onClick={handleLoadMore}
+              disabled={loading}
+            >
+              Load More Reviews
+            </Button>
+          </Box>
         )}
       </Box>
     </Box>

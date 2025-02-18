@@ -13,7 +13,7 @@ import {
     ChevronLeft as ChevronLeftIcon,
     ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
-import axiosInstance from '../../utils/axios';
+import api from '../../utils/api';
 import ProductCard from '../ProductCard';
 
 const RelatedProducts = ({ productId, category }) => {
@@ -32,9 +32,7 @@ const RelatedProducts = ({ productId, category }) => {
             
             try {
                 setLoading(true);
-                setError(null);
-                
-                const response = await axiosInstance.get(`/products/related/${productId}`, {
+                const response = await api.get(`/products/related/${productId}`, {
                     params: {
                         limit: 8,
                         category
@@ -42,18 +40,13 @@ const RelatedProducts = ({ productId, category }) => {
                 });
                 
                 if (response.data.success) {
-                    // Filter out the current product if it's in the results
-                    const filteredProducts = response.data.data.filter(
-                        product => product._id !== productId
-                    );
-                    setProducts(filteredProducts);
+                    setProducts(response.data.data || []);
                 } else {
-                    throw new Error(response.data.message || 'Failed to fetch related products');
+                    setError('Failed to fetch related products');
                 }
             } catch (error) {
                 console.error('Error fetching related products:', error);
-                setError(error.message || 'Failed to fetch related products');
-                setProducts([]);
+                setError(error.response?.data?.message || 'Failed to fetch related products');
             } finally {
                 setLoading(false);
             }
@@ -76,7 +69,7 @@ const RelatedProducts = ({ productId, category }) => {
     if (loading) {
         return (
             <Box sx={{ mt: 4 }}>
-                <Typography variant="h6" gutterBottom>
+                <Typography variant="h5" gutterBottom>
                     Related Products
                 </Typography>
                 <Grid container spacing={2}>
@@ -95,7 +88,7 @@ const RelatedProducts = ({ productId, category }) => {
     if (error) {
         return (
             <Box sx={{ mt: 4 }}>
-                <Typography variant="h6" gutterBottom>
+                <Typography variant="h5" gutterBottom>
                     Related Products
                 </Typography>
                 <Alert severity="error" sx={{ mt: 2 }}>
@@ -105,48 +98,66 @@ const RelatedProducts = ({ productId, category }) => {
         );
     }
 
-    if (!products || products.length === 0) {
-        return null; // Don't show anything if no related products
+    if (!Array.isArray(products) || products.length === 0) {
+        return null;
     }
 
     const visibleProducts = products.slice(
         currentSlide * itemsPerSlide,
-        (currentSlide * itemsPerSlide) + itemsPerSlide
+        (currentSlide + 1) * itemsPerSlide
     );
 
     return (
         <Box sx={{ mt: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6" sx={{ flex: 1 }}>
-                    Related Products
-                </Typography>
-                {products.length > itemsPerSlide && (
-                    <Box>
-                        <IconButton 
-                            onClick={handlePrevSlide}
-                            disabled={currentSlide === 0}
-                            size="small"
-                        >
-                            <ChevronLeftIcon />
-                        </IconButton>
-                        <IconButton 
-                            onClick={handleNextSlide}
-                            disabled={currentSlide >= Math.ceil(products.length / itemsPerSlide) - 1}
-                            size="small"
-                        >
-                            <ChevronRightIcon />
-                        </IconButton>
-                    </Box>
-                )}
-            </Box>
+            <Typography variant="h5" gutterBottom>
+                Related Products
+            </Typography>
+            
+            <Box sx={{ position: 'relative' }}>
+                <IconButton
+                    onClick={handlePrevSlide}
+                    disabled={currentSlide === 0}
+                    sx={{
+                        position: 'absolute',
+                        left: -20,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        zIndex: 1,
+                        bgcolor: 'background.paper',
+                        boxShadow: 1,
+                        '&:hover': { bgcolor: 'background.paper' },
+                        display: { xs: 'none', md: 'flex' }
+                    }}
+                >
+                    <ChevronLeftIcon />
+                </IconButton>
 
-            <Grid container spacing={2}>
-                {visibleProducts.map((product) => (
-                    <Grid item xs={6} md={3} key={product._id}>
-                        <ProductCard product={product} />
-                    </Grid>
-                ))}
-            </Grid>
+                <Grid container spacing={2}>
+                    {visibleProducts.map((product) => (
+                        <Grid item xs={6} md={3} key={product._id}>
+                            <ProductCard product={product} />
+                        </Grid>
+                    ))}
+                </Grid>
+
+                <IconButton
+                    onClick={handleNextSlide}
+                    disabled={currentSlide >= Math.ceil(products.length / itemsPerSlide) - 1}
+                    sx={{
+                        position: 'absolute',
+                        right: -20,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        zIndex: 1,
+                        bgcolor: 'background.paper',
+                        boxShadow: 1,
+                        '&:hover': { bgcolor: 'background.paper' },
+                        display: { xs: 'none', md: 'flex' }
+                    }}
+                >
+                    <ChevronRightIcon />
+                </IconButton>
+            </Box>
         </Box>
     );
 };
