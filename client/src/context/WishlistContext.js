@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../utils/api';
 import { useAuth } from './AuthContext';
 import { toast } from 'react-toastify';
+import axiosInstance from '../utils/axios';
 
 const WishlistContext = createContext();
 
@@ -23,13 +23,13 @@ export const WishlistProvider = ({ children }) => {
   const fetchWishlist = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/wishlist');
+      const response = await axiosInstance.get('/wishlist');
       if (response.data.success) {
         setWishlist(response.data.data);
       }
     } catch (error) {
       console.error('Error fetching wishlist:', error);
-      toast.error('Failed to fetch wishlist');
+      toast.error(error.response?.data?.message || 'Failed to fetch wishlist');
     } finally {
       setLoading(false);
     }
@@ -42,9 +42,9 @@ export const WishlistProvider = ({ children }) => {
     }
 
     try {
-      const response = await api.post('/wishlist', { productId });
+      const response = await axiosInstance.post(`/wishlist/${productId}`);
       if (response.data.success) {
-        setWishlist(prev => [...prev, response.data.data]);
+        await fetchWishlist(); // Refresh the wishlist after adding
         toast.success('Added to wishlist');
         return true;
       }
@@ -59,9 +59,9 @@ export const WishlistProvider = ({ children }) => {
     if (!isAuthenticated) return false;
 
     try {
-      const response = await api.delete(`/wishlist/${productId}`);
+      const response = await axiosInstance.delete(`/wishlist/${productId}`);
       if (response.data.success) {
-        setWishlist(prev => prev.filter(item => item._id !== productId));
+        await fetchWishlist(); // Refresh the wishlist after removing
         toast.success('Removed from wishlist');
         return true;
       }
@@ -73,7 +73,10 @@ export const WishlistProvider = ({ children }) => {
   };
 
   const isInWishlist = (productId) => {
-    return wishlist.some(item => item._id === productId);
+    return wishlist.some(item => 
+      item.product._id === productId || 
+      (typeof item.product === 'string' && item.product === productId)
+    );
   };
 
   const value = {
@@ -99,5 +102,3 @@ export const useWishlist = () => {
   }
   return context;
 };
-
-export default WishlistContext;
