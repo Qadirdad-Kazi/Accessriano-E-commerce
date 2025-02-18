@@ -15,62 +15,23 @@ import {
   Tooltip,
   useTheme,
   useMediaQuery,
-  InputBase,
-  Stack
+  Stack,
+  Drawer,
 } from '@mui/material';
 import {
   ShoppingCart as CartIcon,
   Person as PersonIcon,
-  Search as SearchIcon,
   Menu as MenuIcon,
   AdminPanelSettings as AdminIcon,
   Home as HomeIcon,
-  Category as CategoryIcon
+  Category as CategoryIcon,
+  FilterList as FilterIcon
 } from '@mui/icons-material';
-import { styled, alpha } from '@mui/material/styles';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
 import LanguageSwitcher from './LanguageSwitcher';
-
-const Search = styled('div')(({ theme }) => ({
-  position: 'relative',
-  borderRadius: theme.shape.borderRadius,
-  backgroundColor: alpha(theme.palette.primary.main, 0.15),
-  '&:hover': {
-    backgroundColor: alpha(theme.palette.primary.main, 0.25),
-  },
-  marginRight: theme.spacing(2),
-  marginLeft: 0,
-  width: '100%',
-  [theme.breakpoints.up('sm')]: {
-    marginLeft: theme.spacing(3),
-    width: 'auto',
-  },
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-  padding: theme.spacing(0, 2),
-  height: '100%',
-  position: 'absolute',
-  pointerEvents: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: 'inherit',
-  '& .MuiInputBase-input': {
-    padding: theme.spacing(1, 1, 1, 0),
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    transition: theme.transitions.create('width'),
-    width: '100%',
-    [theme.breakpoints.up('md')]: {
-      width: '40ch',
-    },
-  },
-}));
+import SearchFilters from './SearchFilters'; // ✅ Import SearchFilters
 
 const MotionIconButton = motion(IconButton);
 
@@ -79,7 +40,7 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const { cart } = useCart();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false); // ✅ State for filter drawer
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -99,12 +60,6 @@ const Navbar = () => {
       console.error('Logout failed:', error);
     }
     handleClose();
-  };
-
-  const handleSearch = (e) => {
-    if (e.key === 'Enter') {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
   };
 
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
@@ -139,18 +94,24 @@ const Navbar = () => {
             </Stack>
           )}
 
-          <Search>
-            <SearchIconWrapper>
-              <SearchIcon />
-            </SearchIconWrapper>
-            <StyledInputBase
-              placeholder="Search products…"
-              inputProps={{ 'aria-label': 'search' }}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={handleSearch}
-            />
-          </Search>
+          {/* Filter Button to Open Drawer */}
+          <MotionIconButton color="inherit" onClick={() => setIsFilterOpen(true)}>
+            <FilterIcon />
+          </MotionIconButton>
+
+          {/* Filter Drawer */}
+          <Drawer anchor="right" open={isFilterOpen} onClose={() => setIsFilterOpen(false)}>
+            <Box sx={{ width: 300, p: 2 }}>
+              <Typography variant="h6">Filters</Typography>
+              <SearchFilters
+                filters={{ price: { min: 0, max: 100 }, rating: 0, category: '', brands: [], tags: [] }}
+                selectedFilters={{}}
+                onFilterChange={() => {}}
+                onClearFilters={() => {}}
+                loading={false}
+              />
+            </Box>
+          </Drawer>
 
           <Box sx={{ flexGrow: 1 }} />
 

@@ -18,6 +18,8 @@ import EditProduct from '../pages/EditProduct';
 import AnalyticsDashboard from '../pages/AnalyticsDashboard';
 import AdminOrders from '../pages/AdminOrders';
 import Profile from '../pages/Profile';
+import RequestPasswordReset from '../pages/RequestPasswordReset';
+import PasswordReset from '../pages/PasswordReset';
 
 const LoadingFallback = () => (
   <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -34,6 +36,8 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/request-password-reset" element={<RequestPasswordReset />} />
+        <Route path="/password-reset/:token" element={<PasswordReset />} />
         <Route 
           path="/checkout" 
           element={

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Container, TextField, Button, Typography, Box, Alert, CircularProgress } from '@mui/material';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import API_BASE_URL from '../config';
 
@@ -24,7 +24,7 @@ const Login = () => {
 
     try {
       console.log('Attempting login with:', { email: formData.email });
-      
+
       const response = await axios.post(`${API_BASE_URL}/auth/login`, formData, {
         headers: {
           'Content-Type': 'application/json'
@@ -32,14 +32,14 @@ const Login = () => {
       });
 
       console.log('Login response:', response.data);
-      
+
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        
+
         // Set authorization header for future requests
         axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-        
+
         // Redirect based on user role
         if (response.data.user.role === 'admin') {
           console.log('Redirecting to admin dashboard');
@@ -58,9 +58,9 @@ const Login = () => {
         response: err.response?.data,
         status: err.response?.status
       });
-      
+
       setError(
-        err.response?.data?.message || 
+        err.response?.data?.message ||
         'Unable to connect to the server. Please try again later.'
       );
     } finally {
@@ -80,7 +80,7 @@ const Login = () => {
         <Typography variant="h4" component="h1">
           {t('auth.login')}
         </Typography>
-        
+
         {error && (
           <Alert severity="error" sx={{ width: '100%' }}>
             {error}
@@ -126,15 +126,19 @@ const Login = () => {
               t('auth.login_button')
             )}
           </Button>
-          
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2">
-              {t('auth.no_account')}{' '}
-              <Link to="/register" style={{ textDecoration: 'none' }}>
-                {t('auth.register_now')}
-              </Link>
-            </Typography>
-          </Box>
+          <Typography variant="body2" align="center">
+            <Link to="/request-password-reset" style={{ textDecoration: 'none' }}>
+              {t('auth.forgot_password')}
+            </Link>
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: 'center', mt: 2 }}>
+          <Typography variant="body2">
+            {t('auth.no_account')}{' '}
+            <Link to="/register" style={{ textDecoration: 'none' }}>
+              {t('auth.register_now')}
+            </Link>
+          </Typography>
         </Box>
       </Box>
     </Container>
