@@ -14,6 +14,9 @@ const Wishlist = React.lazy(() => import('./pages/Wishlist'));
 const Categories = React.lazy(() => import('./pages/Categories'));
 const ProductDetails = React.lazy(() => import('./pages/ProductDetails'));
 const Checkout = React.lazy(() => import('./pages/Checkout'));
+const About = React.lazy(() => import('./pages/About'));
+const Contact = React.lazy(() => import('./pages/Contact'));
+const Products = React.lazy(() => import('./pages/Products'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin }) => {
@@ -37,7 +40,10 @@ const AppRoutes = () => {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/categories" element={<Categories />} />
+      <Route path="/products" element={<Products />} />
       <Route path="/product/:id" element={<ProductDetails />} />
 
       {/* Protected User Routes */}
@@ -96,6 +102,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requireAdmin>
             <Orders admin />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/products"
+        element={
+          <ProtectedRoute requireAdmin>
+            <Products admin />
           </ProtectedRoute>
         }
       />
