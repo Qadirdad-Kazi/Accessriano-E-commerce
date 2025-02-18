@@ -8,31 +8,75 @@ import {
   Box,
   Tooltip,
   Chip,
-  Rating
+  Rating,
+  CircularProgress
 } from '@mui/material';
 import { AddShoppingCart, Favorite, FavoriteBorder } from '@mui/icons-material';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 import MotionCard from './animations/MotionCard';
-import MotionButton from './animations/MotionButton';
+import { formatPrice } from '../utils/formatters';
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const [isFavorite, setIsFavorite] = React.useState(false);
+  const { isAuthenticated } = useAuth();
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const [loading, setLoading] = React.useState({
+    cart: false,
+    wishlist: false
+  });
 
   const handleCardClick = () => {
-    navigate(`/product/${product._id}`);
+    if (product?._id) {
+      navigate(`/product/${product._id}`);
+    }
   };
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = async (e) => {
     e.stopPropagation();
-    addToCart(product);
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
+    if (!product?.stock) {
+      return;
+    }
+
+    setLoading(prev => ({ ...prev, cart: true }));
+    try {
+      await addToCart(product._id, 1);
+    } finally {
+      setLoading(prev => ({ ...prev, cart: false }));
+    }
   };
 
-  const handleFavoriteClick = (e) => {
+  const handleWishlistClick = async (e) => {
     e.stopPropagation();
-    setIsFavorite(!isFavorite);
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    setLoading(prev => ({ ...prev, wishlist: true }));
+    try {
+      if (isInWishlist(product._id)) {
+        await removeFromWishlist(product._id);
+      } else {
+        await addToWishlist(product._id);
+      }
+    } finally {
+      setLoading(prev => ({ ...prev, wishlist: false }));
+    }
   };
+
+  if (!product) {
+    return null;
+  }
+
+  const isProductInWishlist = isInWishlist(product._id);
 
   return (
     <MotionCard delay={0.1}>
@@ -42,111 +86,91 @@ const ProductCard = ({ product }) => {
           cursor: 'pointer',
           height: '100%',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          position: 'relative'
         }}
       >
-        <Box sx={{ position: 'relative' }}>
-          <CardMedia
-            component="img"
-            height="200"
-            image={product.images && product.images.length > 0 ? product.images[0] : "https://via.placeholder.com/300x140?text=No+Image"}
-            alt={product.name}
-            sx={{ 
-              objectFit: 'contain',
-              backgroundColor: 'background.paper',
-              p: 2
-            }}
-          />
-          <Box
+        {product.onSale && (
+          <Chip
+            label={`${product.discountPercentage}% OFF`}
+            color="error"
+            size="small"
             sx={{
               position: 'absolute',
               top: 8,
               right: 8,
-              display: 'flex',
-              gap: 1
+              zIndex: 1
             }}
-          >
-            {product.featured && (
-              <Chip
-                label="Featured"
-                color="secondary"
-                size="small"
-                sx={{ borderRadius: '16px' }}
-              />
-            )}
-            <IconButton
-              size="small"
-              onClick={handleFavoriteClick}
-              sx={{
-                backgroundColor: 'background.paper',
-                '&:hover': { backgroundColor: 'background.paper' }
-              }}
-            >
-              {isFavorite ? (
-                <Favorite color="error" />
-              ) : (
-                <FavoriteBorder />
-              )}
-            </IconButton>
-          </Box>
-        </Box>
+          />
+        )}
+        
+        <CardMedia
+          component="img"
+          height="200"
+          image={product.images?.[0] || '/placeholder.jpg'}
+          alt={product.name}
+          sx={{
+            objectFit: 'contain',
+            backgroundColor: 'background.paper'
+          }}
+        />
 
         <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h6" component="div" gutterBottom noWrap>
+          <Typography variant="h6" component="h2" noWrap>
             {product.name}
           </Typography>
           
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <Rating 
-              value={product.averageRating || 0} 
-              readOnly 
-              precision={0.5}
-              size="small"
-            />
+            <Rating value={product.rating || 0} readOnly size="small" />
             <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-              ({product.numberOfReviews || 0})
+              ({product.numReviews || 0})
             </Typography>
           </Box>
 
-          <Typography 
-            variant="body2" 
-            color="text.secondary" 
-            sx={{ 
-              mb: 2,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              minHeight: '40px'
-            }}
-          >
-            {product.description}
+          <Typography variant="h6" color="primary" gutterBottom>
+            {formatPrice(product.discountPrice || product.price)}
+            {product.discountPrice && (
+              <Typography
+                component="span"
+                sx={{
+                  textDecoration: 'line-through',
+                  color: 'text.secondary',
+                  ml: 1,
+                  fontSize: '0.9em'
+                }}
+              >
+                {formatPrice(product.price)}
+              </Typography>
+            )}
           </Typography>
 
-          <Box sx={{ 
-            mt: 'auto',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <Typography variant="h6" color="primary">
-              ${product.price.toFixed(2)}
-            </Typography>
-            
-            <Tooltip title="Add to cart">
-              <MotionButton
-                variant="contained"
-                color="primary"
-                size="small"
-                onClick={handleAddToCart}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                startIcon={<AddShoppingCart />}
-              >
-                Add to Cart
-              </MotionButton>
-            </Tooltip>
+          <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between' }}>
+            <IconButton
+              onClick={handleAddToCart}
+              color="primary"
+              disabled={!product.stock || loading.cart}
+              sx={{ mr: 1 }}
+            >
+              {loading.cart ? (
+                <CircularProgress size={24} />
+              ) : (
+                <Tooltip title={product.stock ? 'Add to Cart' : 'Out of Stock'}>
+                  <AddShoppingCart />
+                </Tooltip>
+              )}
+            </IconButton>
+
+            <IconButton
+              onClick={handleWishlistClick}
+              color={isProductInWishlist ? 'error' : 'default'}
+              disabled={loading.wishlist}
+            >
+              {loading.wishlist ? (
+                <CircularProgress size={24} />
+              ) : (
+                isProductInWishlist ? <Favorite /> : <FavoriteBorder />
+              )}
+            </IconButton>
           </Box>
         </CardContent>
       </Box>

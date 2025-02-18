@@ -53,12 +53,13 @@ const admin = require('../middleware/admin');
 const productController = require('../controllers/productController');
 
 // Public routes
+router.get('/categories', productController.getCategories);
 router.get('/', productController.getAllProducts);
+router.get('/featured', productController.getFeaturedProducts);
 router.get('/filters', productController.getFilters);
 router.get('/search', productController.searchProducts);
-router.get('/category/:category', productController.getProductsByCategory);
-router.get('/featured', productController.getFeaturedProducts);
 router.get('/:id', productController.getProductById);
+router.get('/category/:category', productController.getProductsByCategory);
 
 // Review routes (protected)
 router.post('/:productId/reviews', auth, productController.addReview);

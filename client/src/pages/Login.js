@@ -43,7 +43,7 @@ const Login = () => {
         // Redirect based on user role
         if (response.data.user.role === 'admin') {
           console.log('Redirecting to admin dashboard');
-          navigate('/admin');
+          navigate('/AdminDashboard');
         } else {
           console.log('Redirecting to home page');
           navigate('/');

@@ -107,16 +107,39 @@ exports.createOrder = async (req, res) => {
 exports.getOrders = async (req, res) => {
   try {
     let orders;
+    const productPopulateFields = {
+      path: 'products.product',
+      select: '_id name price description images category'
+    };
+
     if (req.user.role === "admin") {
       orders = await Order.find({})
         .populate('user', 'name email')
-        .populate('products.product')
+        .populate(productPopulateFields)
         .sort({ createdAt: -1 });
     } else {
       orders = await Order.find({ user: req.user.id })
-        .populate('products.product')
+        .populate(productPopulateFields)
         .sort({ createdAt: -1 });
     }
+
+    // Ensure all product data is valid
+    orders = orders.map(order => {
+      const orderObj = order.toObject();
+      orderObj.products = orderObj.products.map(item => {
+        if (!item.product) {
+          // If product is missing, provide a placeholder
+          item.product = {
+            _id: 'deleted',
+            name: 'Product No Longer Available',
+            price: item.price,
+            images: []
+          };
+        }
+        return item;
+      });
+      return orderObj;
+    });
     
     res.status(200).json({
       success: true,

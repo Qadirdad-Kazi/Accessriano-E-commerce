@@ -115,21 +115,100 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
-// Get products by category
-exports.getProductsByCategory = async (req, res) => {
+// Get all categories with metadata
+exports.getCategories = async (req, res) => {
   try {
-    const { category } = req.params;
-    const products = await Product.find({ category });
-    res.status(200).json({ 
+    // Get distinct categories from products
+    const categories = await Product.distinct('category');
+    
+    // Get category counts and additional metadata
+    const categoryDetails = await Promise.all(
+      categories.map(async (category) => {
+        const count = await Product.countDocuments({ category });
+        const sample = await Product.findOne({ category }).select('categoryMetadata');
+        
+        return {
+          name: category,
+          count,
+          displayName: sample?.categoryMetadata?.displayName || category,
+          description: sample?.categoryMetadata?.description || `Browse our collection of ${category} products`,
+          icon: sample?.categoryMetadata?.icon || null,
+          featured: sample?.categoryMetadata?.featured || false
+        };
+      })
+    );
+
+    // Sort categories: featured first, then by count
+    const sortedCategories = categoryDetails.sort((a, b) => {
+      if (a.featured !== b.featured) return b.featured - a.featured;
+      return b.count - a.count;
+    });
+
+    res.status(200).json({
       success: true,
-      message: 'Products retrieved successfully', 
-      data: products 
+      categories: sortedCategories
     });
   } catch (error) {
-    res.status(500).json({ 
+    console.error('Error fetching categories:', error);
+    res.status(500).json({
       success: false,
-      message: 'Error retrieving products', 
-      error: error.message 
+      message: 'Failed to fetch categories'
+    });
+  }
+};
+
+// Get products by category with pagination and filters
+exports.getProductsByCategory = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const sort = req.query.sort || '-createdAt';
+    const category = req.params.category;
+    const minPrice = req.query.minPrice;
+    const maxPrice = req.query.maxPrice;
+    const inStock = req.query.inStock === 'true';
+    const onSale = req.query.onSale === 'true';
+
+    const query = { category };
+
+    // Add filters
+    if (minPrice) query.price = { $gte: parseFloat(minPrice) };
+    if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
+    if (inStock) query.stock = { $gt: 0 };
+    if (onSale) query.onSale = true;
+
+    const products = await Product.find(query)
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select('name price images discountPrice onSale stock rating numReviews');
+
+    const total = await Product.countDocuments(query);
+
+    // Get category metadata
+    const categoryMetadata = await Product.findOne({ category })
+      .select('categoryMetadata')
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      products,
+      metadata: categoryMetadata?.categoryMetadata || {
+        displayName: category,
+        description: `Browse our collection of ${category} products`
+      },
+      pagination: {
+        current: page,
+        pages: Math.ceil(total / limit),
+        total,
+        hasMore: page * limit < total
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching products by category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch products'
     });
   }
 };
@@ -669,6 +748,7 @@ exports.getProductReviews = async (req, res) => {
 module.exports = {
   addProduct: exports.addProduct,
   getAllProducts: exports.getAllProducts,
+  getCategories: exports.getCategories,
   getProductsByCategory: exports.getProductsByCategory,
   getFeaturedProducts: exports.getFeaturedProducts,
   getProductById: exports.getProductById,

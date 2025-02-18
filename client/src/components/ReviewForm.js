@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -7,55 +7,105 @@ import {
   Button,
   TextField,
   Rating,
-  Box
+  Box,
+  Typography,
 } from '@mui/material';
 import { Star } from '@mui/icons-material';
 
 function ReviewForm({ open, onClose, onSubmit, initialRating = 0, productName }) {
   const [rating, setRating] = useState(initialRating);
   const [review, setReview] = useState('');
+  const [error, setError] = useState('');
+  const reviewInputRef = useRef(null);
+
+  const validateForm = () => {
+    if (!rating) {
+      setError('Please provide a rating');
+      return false;
+    }
+    if (review.length < 10) {
+      setError('Review must be at least 10 characters long');
+      reviewInputRef.current?.focus();
+      return false;
+    }
+    return true;
+  };
 
   const handleSubmit = () => {
-    onSubmit({ rating, review });
-    setRating(0);
+    setError('');
+    if (validateForm()) {
+      onSubmit({ rating, review });
+      setRating(0);
+      setReview('');
+    }
+  };
+
+  const handleClose = () => {
+    setError('');
+    setRating(initialRating);
     setReview('');
     onClose();
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Write a Review {productName && `for ${productName}`}</DialogTitle>
+    <Dialog 
+      open={open} 
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      aria-labelledby="review-dialog-title"
+      keepMounted
+    >
+      <DialogTitle id="review-dialog-title">
+        Write a Review {productName && `for ${productName}`}
+      </DialogTitle>
       <DialogContent>
         <Box sx={{ mb: 2, mt: 1 }}>
+          <Typography component="legend" id="rating-label">Rating</Typography>
           <Rating
             name="product-rating"
             value={rating}
-            onChange={(event, newValue) => setRating(newValue)}
-            precision={0.5}
-            icon={<Star fontSize="inherit" />}
+            onChange={(_, newValue) => {
+              setRating(newValue);
+              setError('');
+            }}
+            precision={1}
+            size="large"
+            aria-labelledby="rating-label"
+            emptyIcon={<Star style={{ opacity: 0.55 }} fontSize="inherit" />}
           />
         </Box>
         <TextField
-          margin="dense"
-          label="Your Review"
-          fullWidth
+          inputRef={reviewInputRef}
           multiline
           rows={4}
+          fullWidth
+          variant="outlined"
+          label="Your Review"
           value={review}
-          onChange={(e) => setReview(e.target.value)}
-          required
+          onChange={(e) => {
+            setReview(e.target.value);
+            setError('');
+          }}
+          error={!!error}
+          helperText={error || 'Minimum 10 characters'}
+          aria-label="Review text"
+          inputProps={{
+            'aria-describedby': 'review-helper-text'
+          }}
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="primary">
+        <Button onClick={handleClose} color="primary">
           Cancel
         </Button>
         <Button 
           onClick={handleSubmit} 
           color="primary" 
-          disabled={!rating || !review.trim()}
+          variant="contained"
+          aria-label="Submit review"
         >
-          Submit
+          Submit Review
         </Button>
       </DialogActions>
     </Dialog>

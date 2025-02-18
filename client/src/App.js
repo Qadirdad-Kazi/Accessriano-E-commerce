@@ -10,6 +10,7 @@ import AppRoutes from './routes';
 import Navbar from './components/Navbar';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { WishlistProvider } from './context/WishlistContext';
 import ChatbotWidget from './components/ChatbotWidget';
 
 const LoadingFallback = () => (
@@ -24,34 +25,36 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <CartProvider>
-          <Router>
-            <div style={{ 
-              minHeight: '100vh',
-              background: theme.palette.background.default,
-              display: 'flex',
-              flexDirection: 'column'
-            }}>
-              <Navbar />
-              <main style={{ flex: 1, paddingTop: '20px', paddingBottom: '40px' }}>
-                <Suspense fallback={<LoadingFallback />}>
-                  <AppRoutes />
-                </Suspense>
-              </main>
-              <ChatbotWidget />
-              <ToastContainer
-                position="bottom-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="colored"
-              />
-            </div>
-          </Router>
+          <WishlistProvider>
+            <Router>
+              <div style={{ 
+                minHeight: '100vh',
+                background: theme.palette.background.default,
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <Navbar />
+                <main style={{ flex: 1, paddingTop: '20px', paddingBottom: '40px' }}>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <AppRoutes />
+                  </Suspense>
+                </main>
+                <ChatbotWidget />
+                <ToastContainer
+                  position="bottom-right"
+                  autoClose={3000}
+                  hideProgressBar={false}
+                  newestOnTop
+                  closeOnClick
+                  rtl={false}
+                  pauseOnFocusLoss
+                  draggable
+                  pauseOnHover
+                  theme="colored"
+                />
+              </div>
+            </Router>
+          </WishlistProvider>
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>

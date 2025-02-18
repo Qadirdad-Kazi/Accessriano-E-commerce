@@ -7,12 +7,13 @@ import {
     useTheme,
     useMediaQuery,
     Skeleton,
+    Alert,
 } from '@mui/material';
 import {
     ChevronLeft as ChevronLeftIcon,
     ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../../utils/api';
 import ProductCard from '../ProductCard';
 
 const RelatedProducts = ({ productId, category }) => {
@@ -27,9 +28,22 @@ const RelatedProducts = ({ productId, category }) => {
 
     useEffect(() => {
         const fetchRelatedProducts = async () => {
+            if (!productId) return;
+            
             try {
-                const response = await axios.get(`/api/search/related/${productId}`);
-                setProducts(response.data.data);
+                setLoading(true);
+                const response = await api.get(`/products/related/${productId}`, {
+                    params: {
+                        limit: 8,
+                        category
+                    }
+                });
+                
+                if (response.data.success) {
+                    setProducts(response.data.data || []);
+                } else {
+                    setError('Failed to fetch related products');
+                }
             } catch (error) {
                 console.error('Error fetching related products:', error);
                 setError(error.response?.data?.message || 'Failed to fetch related products');
@@ -39,7 +53,7 @@ const RelatedProducts = ({ productId, category }) => {
         };
 
         fetchRelatedProducts();
-    }, [productId]);
+    }, [productId, category]);
 
     const handlePrevSlide = () => {
         setCurrentSlide((prev) => Math.max(0, prev - 1));
@@ -54,126 +68,96 @@ const RelatedProducts = ({ productId, category }) => {
 
     if (loading) {
         return (
-            <Grid container spacing={2}>
-                {[...Array(4)].map((_, index) => (
-                    <Grid item xs={6} md={3} key={index}>
-                        <Skeleton variant="rectangular" height={200} />
-                        <Skeleton variant="text" />
-                        <Skeleton variant="text" width="60%" />
-                    </Grid>
-                ))}
-            </Grid>
+            <Box sx={{ mt: 4 }}>
+                <Typography variant="h5" gutterBottom>
+                    Related Products
+                </Typography>
+                <Grid container spacing={2}>
+                    {[...Array(4)].map((_, index) => (
+                        <Grid item xs={6} md={3} key={index}>
+                            <Skeleton variant="rectangular" height={200} />
+                            <Skeleton variant="text" />
+                            <Skeleton variant="text" width="60%" />
+                        </Grid>
+                    ))}
+                </Grid>
+            </Box>
         );
     }
 
     if (error) {
         return (
-            <Typography color="error">
-                {error}
-            </Typography>
+            <Box sx={{ mt: 4 }}>
+                <Typography variant="h5" gutterBottom>
+                    Related Products
+                </Typography>
+                <Alert severity="error" sx={{ mt: 2 }}>
+                    {error}
+                </Alert>
+            </Box>
         );
     }
 
-    if (products.length === 0) {
+    if (!Array.isArray(products) || products.length === 0) {
         return null;
     }
 
+    const visibleProducts = products.slice(
+        currentSlide * itemsPerSlide,
+        (currentSlide + 1) * itemsPerSlide
+    );
+
     return (
-        <Box sx={{ position: 'relative' }}>
-            <Box
-                sx={{
-                    display: 'flex',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    mx: { xs: -2, md: 0 },
-                    px: { xs: 2, md: 0 },
-                }}
-            >
-                <Box
+        <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom>
+                Related Products
+            </Typography>
+            
+            <Box sx={{ position: 'relative' }}>
+                <IconButton
+                    onClick={handlePrevSlide}
+                    disabled={currentSlide === 0}
                     sx={{
-                        display: 'flex',
-                        transition: 'transform 0.3s ease-in-out',
-                        transform: `translateX(-${currentSlide * 100}%)`,
-                        gap: 2,
+                        position: 'absolute',
+                        left: -20,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        zIndex: 1,
+                        bgcolor: 'background.paper',
+                        boxShadow: 1,
+                        '&:hover': { bgcolor: 'background.paper' },
+                        display: { xs: 'none', md: 'flex' }
                     }}
                 >
-                    {products.map((product) => (
-                        <Box
-                            key={product._id}
-                            sx={{
-                                flex: `0 0 ${100 / itemsPerSlide}%`,
-                                maxWidth: `${100 / itemsPerSlide}%`,
-                            }}
-                        >
+                    <ChevronLeftIcon />
+                </IconButton>
+
+                <Grid container spacing={2}>
+                    {visibleProducts.map((product) => (
+                        <Grid item xs={6} md={3} key={product._id}>
                             <ProductCard product={product} />
-                        </Box>
+                        </Grid>
                     ))}
-                </Box>
-            </Box>
+                </Grid>
 
-            {/* Navigation Arrows */}
-            {products.length > itemsPerSlide && (
-                <>
-                    <IconButton
-                        onClick={handlePrevSlide}
-                        disabled={currentSlide === 0}
-                        sx={{
-                            position: 'absolute',
-                            left: -20,
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            bgcolor: 'background.paper',
-                            boxShadow: 2,
-                            '&:hover': { bgcolor: 'background.paper' },
-                            display: { xs: 'none', md: 'flex' },
-                        }}
-                    >
-                        <ChevronLeftIcon />
-                    </IconButton>
-                    <IconButton
-                        onClick={handleNextSlide}
-                        disabled={currentSlide >= Math.ceil(products.length / itemsPerSlide) - 1}
-                        sx={{
-                            position: 'absolute',
-                            right: -20,
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            bgcolor: 'background.paper',
-                            boxShadow: 2,
-                            '&:hover': { bgcolor: 'background.paper' },
-                            display: { xs: 'none', md: 'flex' },
-                        }}
-                    >
-                        <ChevronRightIcon />
-                    </IconButton>
-                </>
-            )}
-
-            {/* Mobile Pagination Dots */}
-            {isMobile && products.length > itemsPerSlide && (
-                <Box
+                <IconButton
+                    onClick={handleNextSlide}
+                    disabled={currentSlide >= Math.ceil(products.length / itemsPerSlide) - 1}
                     sx={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        mt: 2,
-                        gap: 1,
+                        position: 'absolute',
+                        right: -20,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        zIndex: 1,
+                        bgcolor: 'background.paper',
+                        boxShadow: 1,
+                        '&:hover': { bgcolor: 'background.paper' },
+                        display: { xs: 'none', md: 'flex' }
                     }}
                 >
-                    {[...Array(Math.ceil(products.length / itemsPerSlide))].map((_, index) => (
-                        <Box
-                            key={index}
-                            sx={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                bgcolor: currentSlide === index ? 'primary.main' : 'grey.300',
-                                transition: 'background-color 0.3s',
-                            }}
-                            onClick={() => setCurrentSlide(index)}
-                        />
-                    ))}
-                </Box>
-            )}
+                    <ChevronRightIcon />
+                </IconButton>
+            </Box>
         </Box>
     );
 };

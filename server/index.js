@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const { errorHandler } = require('./utils/errorHandler');
 require('dotenv').config();
 
 // Import routes
@@ -16,6 +17,7 @@ const wishlistRoutes = require('./routes/wishlistRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const searchRoutes = require('./routes/searchRoutes');
 const apiRoutes = require('./routes/apiRoutes');
+const cartRoutes = require('./routes/cart');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -41,17 +43,31 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/accessria
   });
 
 // API Routes
+console.log('Mounting routes...');
 app.use('/api/auth', authRoutes);
+console.log('Mounted /api/auth route');
 app.use('/api/products', productRoutes);
+console.log('Mounted /api/products route');
 app.use('/api/orders', orderRoutes);
+console.log('Mounted /api/orders route');
 app.use('/api/analytics', analyticsRoutes);
+console.log('Mounted /api/analytics route');
 app.use('/api/chatbot', chatbotRoutes);
+console.log('Mounted /api/chatbot route');
 app.use('/api/reviews', reviewRoutes);
+console.log('Mounted /api/reviews route');
 app.use('/api/categories', categoryRoutes);
+console.log('Mounted /api/categories route');
 app.use('/api/wishlist', wishlistRoutes);
+console.log('Mounted /api/wishlist route');
 app.use('/api/contact', contactRoutes);
+console.log('Mounted /api/contact route');
 app.use('/api/search', searchRoutes);
-app.use('/api', apiRoutes);
+console.log('Mounted /api/search route');
+app.use('/api/external', apiRoutes);
+console.log('Mounted /api/external route');
+app.use('/api/cart', cartRoutes);
+console.log('Mounted /api/cart route');
 
 // API Documentation Route
 app.get('/api', (req, res) => {
@@ -78,14 +94,14 @@ app.get('*', (req, res) => {
 });
 
 // Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.statusCode || 500).json({
+app.use(errorHandler);
+
+// Handle 404 errors
+app.use((req, res) => {
+  console.log('404 Not Found:', req.method, req.url);
+  res.status(404).json({
     success: false,
-    error: {
-      message: err.message || 'Something went wrong!',
-      code: err.code || 'INTERNAL_SERVER_ERROR'
-    }
+    message: 'Route not found'
   });
 });
 

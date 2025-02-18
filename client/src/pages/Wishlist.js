@@ -27,6 +27,7 @@ import { Link } from 'react-router-dom';
 const Wishlist = () => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { addToCart } = useCart();
   const theme = useTheme();
 
@@ -36,11 +37,14 @@ const Wishlist = () => {
 
   const fetchWishlist = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await api.get('/wishlist');
-      setWishlist(response.data.data);
-      setLoading(false);
+      setWishlist(response.data.data || []);
     } catch (error) {
       console.error('Error fetching wishlist:', error);
+      setError(error.response?.data?.message || 'Failed to fetch wishlist');
+    } finally {
       setLoading(false);
     }
   };
@@ -66,19 +70,41 @@ const Wishlist = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h4" gutterBottom>My Wishlist</Typography>
+      <Container sx={{ py: 4 }}>
         <Grid container spacing={3}>
           {[1, 2, 3, 4].map((item) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={item}>
-              <Skeleton variant="rectangular" height={200} />
-              <Box sx={{ pt: 0.5 }}>
-                <Skeleton />
-                <Skeleton width="60%" />
-              </Box>
+              <Card>
+                <Skeleton variant="rectangular" height={200} />
+                <CardContent>
+                  <Skeleton variant="text" width="80%" />
+                  <Skeleton variant="text" width="60%" />
+                </CardContent>
+              </Card>
             </Grid>
           ))}
         </Grid>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container sx={{ py: 4 }}>
+        <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <Typography color="error" gutterBottom>
+            {error}
+          </Typography>
+          <Button
+            component={Link}
+            to="/login"
+            variant="contained"
+            color="primary"
+            sx={{ mt: 2 }}
+          >
+            Login
+          </Button>
+        </Paper>
       </Container>
     );
   }

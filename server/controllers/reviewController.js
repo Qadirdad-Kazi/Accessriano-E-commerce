@@ -12,7 +12,7 @@ exports.createReview = catchAsync(async (req, res) => {
         // Check if user has purchased the product
         const hasPurchased = await Order.exists({
             user: req.user._id,
-            'products.product': req.body.product,
+            'products.product': req.body.productId,
             status: 'delivered',
             paymentStatus: 'completed'
         });
@@ -26,7 +26,7 @@ exports.createReview = catchAsync(async (req, res) => {
         // Check if user has already reviewed this product
         const existingReview = await Review.findOne({
             user: req.user._id,
-            product: req.body.product
+            product: req.body.productId
         });
 
         console.log('Existing review:', existingReview);
@@ -38,14 +38,14 @@ exports.createReview = catchAsync(async (req, res) => {
         // Find the order to mark the product as reviewed
         const order = await Order.findOne({
             user: req.user._id,
-            'products.product': req.body.product,
+            'products.product': req.body.productId,
             status: 'delivered'
         });
 
         if (order) {
             // Mark the specific product as reviewed
             const productItem = order.products.find(p => 
-                p.product.toString() === req.body.product.toString()
+                p.product.toString() === req.body.productId.toString()
             );
             if (productItem) {
                 productItem.reviewed = true;
@@ -54,10 +54,11 @@ exports.createReview = catchAsync(async (req, res) => {
         }
 
         const review = await Review.create({
-            product: req.body.product,
+            product: req.body.productId,
             user: req.user._id,
             rating: req.body.rating,
-            review: req.body.review
+            title: req.body.title,
+            review: req.body.content
         });
 
         console.log('Created review:', review);

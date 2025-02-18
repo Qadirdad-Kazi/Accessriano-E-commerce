@@ -16,6 +16,7 @@ import {
     Paper,
     useTheme,
     useMediaQuery,
+    CircularProgress,
 } from '@mui/material';
 import {
     ShoppingCart as CartIcon,
@@ -28,23 +29,26 @@ import {
     Reviews as ReviewsIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/api';
 import ImageGallery from '../components/product/ImageGallery';
 import QuantitySelector from '../components/product/QuantitySelector';
 import ProductVariants from '../components/product/ProductVariants';
 import RelatedProducts from '../components/product/RelatedProducts';
 import ReviewSection from '../components/product/ReviewSection';
-import { useCart } from '../contexts/CartContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 import { formatPrice } from '../utils/formatters';
+import { toast } from 'react-toastify';
 
 const ProductDetails = () => {
-    const { productId } = useParams();
+    const { id } = useParams();
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const { addToCart } = useCart();
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated } = useAuth();
+    const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
 
     const [product, setProduct] = useState(null);
     const [selectedVariant, setSelectedVariant] = useState(null);
@@ -52,20 +56,28 @@ const ProductDetails = () => {
     const [activeTab, setActiveTab] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isFavorite, setIsFavorite] = useState(false);
+    const [actionLoading, setActionLoading] = useState({
+        cart: false,
+        wishlist: false
+    });
 
     useEffect(() => {
         const fetchProduct = async () => {
+            if (!id) {
+                setError('Product ID is required');
+                setLoading(false);
+                return;
+            }
+
             try {
-                const response = await axios.get(`/api/products/${productId}`);
-                setProduct(response.data.data);
-                if (response.data.data.variants?.length > 0) {
-                    setSelectedVariant(response.data.data.variants[0]);
-                }
-                // Check if product is in user's wishlist
-                if (isAuthenticated) {
-                    const wishlistResponse = await axios.get('/api/wishlist');
-                    setIsFavorite(wishlistResponse.data.data.some(item => item._id === productId));
+                const response = await api.get(`/products/${id}`);
+                if (response.data.success) {
+                    setProduct(response.data.data);
+                    if (response.data.data.variants?.length > 0) {
+                        setSelectedVariant(response.data.data.variants[0]);
+                    }
+                } else {
+                    setError('Failed to fetch product details');
                 }
             } catch (error) {
                 setError(error.response?.data?.message || 'Failed to fetch product details');
@@ -76,7 +88,7 @@ const ProductDetails = () => {
         };
 
         fetchProduct();
-    }, [productId, isAuthenticated]);
+    }, [id]);
 
     const handleQuantityChange = (newQuantity) => {
         setQuantity(newQuantity);
@@ -87,58 +99,70 @@ const ProductDetails = () => {
     };
 
     const handleAddToCart = async () => {
-        try {
-            await addToCart({
-                productId,
-                quantity,
-                variantId: selectedVariant?._id,
-            });
-        } catch (error) {
-            console.error('Error adding to cart:', error);
-        }
-    };
-
-    const handleToggleFavorite = async () => {
         if (!isAuthenticated) {
             navigate('/login');
             return;
         }
 
+        if (!product?.stock) {
+            toast.error('Product is out of stock');
+            return;
+        }
+
+        setActionLoading(prev => ({ ...prev, cart: true }));
         try {
-            if (isFavorite) {
-                await axios.delete(`/api/wishlist/${productId}`);
-            } else {
-                await axios.post('/api/wishlist', { productId });
-            }
-            setIsFavorite(!isFavorite);
-        } catch (error) {
-            console.error('Error updating wishlist:', error);
+            await addToCart(product._id, quantity);
+        } finally {
+            setActionLoading(prev => ({ ...prev, cart: false }));
         }
     };
 
-    const handleShare = async () => {
+    const handleWishlistToggle = async () => {
+        if (!isAuthenticated) {
+            navigate('/login');
+            return;
+        }
+
+        setActionLoading(prev => ({ ...prev, wishlist: true }));
         try {
-            await navigator.share({
+            if (isInWishlist(product._id)) {
+                await removeFromWishlist(product._id);
+            } else {
+                await addToWishlist(product._id);
+            }
+        } finally {
+            setActionLoading(prev => ({ ...prev, wishlist: false }));
+        }
+    };
+
+    const handleShareClick = () => {
+        if (navigator.share) {
+            navigator.share({
                 title: product.name,
                 text: product.description,
                 url: window.location.href,
-            });
-        } catch (error) {
-            console.error('Error sharing:', error);
+            }).catch(console.error);
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            toast.success('Link copied to clipboard!');
         }
+    };
+
+    const handleTabChange = (event, newValue) => {
+        setActiveTab(newValue);
     };
 
     if (loading) {
         return (
-            <Container maxWidth="xl" sx={{ py: 4 }}>
-                <Grid container spacing={3}>
+            <Container maxWidth="lg" sx={{ py: 4 }}>
+                <Grid container spacing={4}>
                     <Grid item xs={12} md={6}>
                         <Skeleton variant="rectangular" height={400} />
                     </Grid>
                     <Grid item xs={12} md={6}>
+                        <Skeleton variant="text" height={40} />
+                        <Skeleton variant="text" height={30} width="60%" />
                         <Skeleton variant="text" height={60} />
-                        <Skeleton variant="text" height={30} />
-                        <Skeleton variant="text" height={30} />
                         <Skeleton variant="rectangular" height={100} />
                     </Grid>
                 </Grid>
@@ -148,28 +172,28 @@ const ProductDetails = () => {
 
     if (error) {
         return (
-            <Container maxWidth="xl" sx={{ py: 4 }}>
+            <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Alert severity="error">{error}</Alert>
             </Container>
         );
     }
 
-    if (!product) return null;
+    if (!product) {
+        return (
+            <Container maxWidth="lg" sx={{ py: 4 }}>
+                <Alert severity="error">Product not found</Alert>
+            </Container>
+        );
+    }
 
-    const currentPrice = selectedVariant?.price || product.price;
-    const originalPrice = selectedVariant?.originalPrice || product.originalPrice;
-    const discount = originalPrice ? Math.round((1 - currentPrice / originalPrice) * 100) : 0;
-    const inStock = selectedVariant?.stock > 0 || product.stock > 0;
+    const isProductInWishlist = isInWishlist(product._id);
 
     return (
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-            <Grid container spacing={3}>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+            <Grid container spacing={4}>
                 {/* Product Images */}
                 <Grid item xs={12} md={6}>
-                    <ImageGallery
-                        images={product.images}
-                        alt={product.name}
-                    />
+                    <ImageGallery images={product.images || []} />
                 </Grid>
 
                 {/* Product Info */}
@@ -180,36 +204,51 @@ const ProductDetails = () => {
                         </Typography>
 
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                            <Rating value={product.averageRating} precision={0.5} readOnly />
-                            <Typography variant="body2" sx={{ ml: 1 }}>
-                                ({product.numberOfReviews} reviews)
+                            <Rating value={product.rating || 0} readOnly precision={0.5} />
+                            <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                                ({product.numReviews || 0} reviews)
                             </Typography>
                         </Box>
 
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                            <Typography variant="h5" component="span">
-                                {formatPrice(currentPrice)}
+                            <Typography variant="h4" color="primary" component="div">
+                                {formatPrice(product.discountPrice || product.price)}
                             </Typography>
-                            {originalPrice && originalPrice > currentPrice && (
-                                <>
-                                    <Typography
-                                        variant="h6"
-                                        component="span"
-                                        sx={{ textDecoration: 'line-through', mx: 2, color: 'text.secondary' }}
-                                    >
-                                        {formatPrice(originalPrice)}
-                                    </Typography>
-                                    <Chip
-                                        label={`${discount}% OFF`}
-                                        color="error"
-                                        size="small"
-                                    />
-                                </>
+                            {product.discountPrice && (
+                                <Typography
+                                    variant="h6"
+                                    color="text.secondary"
+                                    sx={{ ml: 2, textDecoration: 'line-through' }}
+                                >
+                                    {formatPrice(product.price)}
+                                </Typography>
+                            )}
+                            {product.onSale && (
+                                <Chip
+                                    label={`${product.discountPercentage}% OFF`}
+                                    color="error"
+                                    size="small"
+                                    sx={{ ml: 2 }}
+                                />
                             )}
                         </Box>
 
-                        {/* Product Variants */}
-                        {product.variants?.length > 0 && (
+                        {/* Stock Status */}
+                        <Box sx={{ mb: 3 }}>
+                            <Chip
+                                label={product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                                color={product.stock > 0 ? 'success' : 'error'}
+                                variant="outlined"
+                            />
+                            {product.stock > 0 && (
+                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                    {product.stock} units available
+                                </Typography>
+                            )}
+                        </Box>
+
+                        {/* Variants */}
+                        {product.variants && product.variants.length > 0 && (
                             <Box sx={{ mb: 3 }}>
                                 <ProductVariants
                                     variants={product.variants}
@@ -219,124 +258,102 @@ const ProductDetails = () => {
                             </Box>
                         )}
 
-                        {/* Quantity Selector and Add to Cart */}
+                        {/* Quantity Selector */}
                         <Box sx={{ mb: 3 }}>
-                            <Grid container spacing={2} alignItems="center">
-                                <Grid item>
-                                    <QuantitySelector
-                                        quantity={quantity}
-                                        onChange={handleQuantityChange}
-                                        max={selectedVariant?.stock || product.stock}
-                                    />
-                                </Grid>
-                                <Grid item xs>
-                                    <Button
-                                        variant="contained"
-                                        size="large"
-                                        startIcon={<CartIcon />}
-                                        onClick={handleAddToCart}
-                                        disabled={!inStock}
-                                        fullWidth
-                                    >
-                                        {inStock ? 'Add to Cart' : 'Out of Stock'}
-                                    </Button>
-                                </Grid>
-                            </Grid>
+                            <QuantitySelector
+                                quantity={quantity}
+                                onChange={handleQuantityChange}
+                                max={product.stock}
+                            />
                         </Box>
 
                         {/* Action Buttons */}
-                        <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-                            <IconButton onClick={handleToggleFavorite} color={isFavorite ? 'primary' : 'default'}>
-                                {isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                            <Button
+                                variant="contained"
+                                size="large"
+                                startIcon={actionLoading.cart ? <CircularProgress size={20} /> : <CartIcon />}
+                                onClick={handleAddToCart}
+                                disabled={!product.stock || actionLoading.cart}
+                                sx={{ flex: 1 }}
+                            >
+                                Add to Cart
+                            </Button>
+
+                            <IconButton
+                                color={isProductInWishlist ? 'error' : 'default'}
+                                onClick={handleWishlistToggle}
+                                disabled={actionLoading.wishlist}
+                                sx={{ border: 1, borderColor: 'divider' }}
+                            >
+                                {actionLoading.wishlist ? (
+                                    <CircularProgress size={24} />
+                                ) : (
+                                    isProductInWishlist ? <FavoriteIcon /> : <FavoriteBorderIcon />
+                                )}
                             </IconButton>
-                            <IconButton onClick={handleShare}>
+
+                            <IconButton
+                                onClick={handleShareClick}
+                                sx={{ border: 1, borderColor: 'divider' }}
+                            >
                                 <ShareIcon />
                             </IconButton>
                         </Box>
 
-                        {/* Shipping Info */}
-                        <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                <ShippingIcon sx={{ mr: 1 }} />
-                                <Typography variant="subtitle1">
-                                    Shipping & Returns
-                                </Typography>
+                        {/* Product Information Tabs */}
+                        <Box sx={{ width: '100%', mb: 3 }}>
+                            <Tabs
+                                value={activeTab}
+                                onChange={handleTabChange}
+                                variant="scrollable"
+                                scrollButtons="auto"
+                            >
+                                <Tab icon={<DescriptionIcon />} label="Description" />
+                                <Tab icon={<SpecsIcon />} label="Specifications" />
+                                <Tab icon={<ShippingIcon />} label="Shipping" />
+                            </Tabs>
+                            <Box sx={{ p: 2, border: 1, borderColor: 'divider', mt: 2 }}>
+                                {activeTab === 0 && (
+                                    <Typography variant="body1">{product.description}</Typography>
+                                )}
+                                {activeTab === 1 && (
+                                    <Box>
+                                        {product.specifications?.map((spec, index) => (
+                                            <Box key={index} sx={{ mb: 1 }}>
+                                                <Typography variant="subtitle2" color="text.secondary">
+                                                    {spec.name}
+                                                </Typography>
+                                                <Typography variant="body1">{spec.value}</Typography>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                )}
+                                {activeTab === 2 && (
+                                    <Box>
+                                        <Typography variant="body1" paragraph>
+                                            Free shipping on orders over $50
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Estimated delivery: 3-5 business days
+                                        </Typography>
+                                    </Box>
+                                )}
                             </Box>
-                            <Typography variant="body2" color="text.secondary">
-                                Free shipping on orders over $50. 30-day return policy.
-                            </Typography>
-                        </Paper>
+                        </Box>
                     </Box>
-                </Grid>
-
-                {/* Product Details Tabs */}
-                <Grid item xs={12}>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <Tabs
-                            value={activeTab}
-                            onChange={(e, newValue) => setActiveTab(newValue)}
-                            variant={isMobile ? 'fullWidth' : 'standard'}
-                        >
-                            <Tab icon={<DescriptionIcon />} label="Description" />
-                            <Tab icon={<SpecsIcon />} label="Specifications" />
-                            <Tab icon={<ReviewsIcon />} label={`Reviews (${product.numberOfReviews})`} />
-                        </Tabs>
-                    </Box>
-
-                    {/* Description Tab */}
-                    {activeTab === 0 && (
-                        <Box sx={{ py: 3 }}>
-                            <Typography variant="body1">
-                                {product.description}
-                            </Typography>
-                        </Box>
-                    )}
-
-                    {/* Specifications Tab */}
-                    {activeTab === 1 && (
-                        <Box sx={{ py: 3 }}>
-                            <Grid container spacing={2}>
-                                {product.specifications?.map((spec, index) => (
-                                    <Grid item xs={12} sm={6} key={index}>
-                                        <Paper variant="outlined" sx={{ p: 2 }}>
-                                            <Typography variant="subtitle2" color="text.secondary">
-                                                {spec.name}
-                                            </Typography>
-                                            <Typography variant="body1">
-                                                {spec.value}
-                                            </Typography>
-                                        </Paper>
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        </Box>
-                    )}
-
-                    {/* Reviews Tab */}
-                    {activeTab === 2 && (
-                        <Box sx={{ py: 3 }}>
-                            <ReviewSection
-                                productId={productId}
-                                reviews={product.reviews}
-                                averageRating={product.averageRating}
-                                numberOfReviews={product.numberOfReviews}
-                            />
-                        </Box>
-                    )}
-                </Grid>
-
-                {/* Related Products */}
-                <Grid item xs={12}>
-                    <Divider sx={{ my: 4 }} />
-                    <Typography variant="h5" gutterBottom>
-                        Related Products
-                    </Typography>
-                    <RelatedProducts
-                        productId={productId}
-                        category={product.category}
-                    />
                 </Grid>
             </Grid>
+
+            {/* Reviews Section */}
+            <Box sx={{ mt: 6 }}>
+                <ReviewSection productId={id} />
+            </Box>
+
+            {/* Related Products */}
+            <Box sx={{ mt: 6 }}>
+                <RelatedProducts productId={id} category={product.category} />
+            </Box>
         </Container>
     );
 };

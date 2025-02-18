@@ -58,14 +58,32 @@ const ProductSchema = new mongoose.Schema({
         'Laptops',
         'Accessories',
         'Headphones',
-        'Sports',
-        'Books',
-        'Clothes/Shoes',
-        'Beauty/Health',
-        'Outdoor',
-        'Home'
+        'Audio',
+        'Gaming',
+        'Mobile Phones',
+        'Tablets',
+        'Wearables',
+        'Computer Parts',
+        'Smart Home',
+        'Networking',
+        'Storage',
+        'Software',
+        'Office Equipment'
       ],
       message: 'Please select correct category for product'
+    }
+  },
+  subCategory: {
+    type: String,
+    required: false
+  },
+  categoryMetadata: {
+    displayName: String,
+    description: String,
+    icon: String,
+    featured: {
+      type: Boolean,
+      default: false
     }
   },
   seller: {

@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@mui/material';
 
-const MotionButton = ({ children, ...props }) => {
+const MotionButton = ({ children, whileHover, whileTap, ...props }) => {
   return (
     <motion.div
       whileHover={{ scale: 1.05 }}

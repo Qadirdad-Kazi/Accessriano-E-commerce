@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { Container, Grid, Typography, CircularProgress, Box } from '@mui/material';
 import ProductCard from '../components/ProductCard';
 import HeroSection from '../components/HeroSection';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import SearchBar from '../components/SearchBar';
-import API_BASE_URL from '../config';
+import api from '../utils/api';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
@@ -15,11 +14,15 @@ const Home = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/products`);
-        setProducts(response.data?.data || []);
+        const response = await api.get('/products');
+        if (response.data.success) {
+          setProducts(response.data.data || []);
+        } else {
+          setError('Failed to fetch products');
+        }
       } catch (error) {
         console.error('Error fetching products:', error);
-        setError(error?.message || 'Failed to fetch products.');
+        setError(error?.response?.data?.message || 'Failed to fetch products');
       } finally {
         setLoading(false);
       }
@@ -47,12 +50,12 @@ const Home = () => {
   }
 
   return (
-    <Container>
+    <Container maxWidth="xl">
       <HeroSection />
       <Box py={4}>
         <LanguageSwitcher />
         <Box display="flex" justifyContent="center" sx={{ mt: 3, mb: 3 }}> 
-          <SearchBar />  {/* ✅ Moved SearchBar to Home.js */}
+          <SearchBar />  
         </Box>
         <Typography variant="h4" gutterBottom align="center">Welcome to Accessriano</Typography>
         <Typography variant="h5" gutterBottom align="center">Featured Products</Typography>
