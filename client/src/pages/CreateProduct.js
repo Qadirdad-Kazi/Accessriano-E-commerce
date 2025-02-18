@@ -43,17 +43,37 @@ const CreateProduct = () => {
 
     const initialValues = {
         name: '',
+        sku: '',
         description: '',
         price: '',
+        discountPrice: '',
+        discountPercentage: '',
+        onSale: false,
+        brand: '',
         category: '',
         seller: '',
         stock: '',
+        specifications: [],
+        variants: [],
+        dimensions: {
+            length: '',
+            width: '',
+            height: '',
+            unit: 'cm'
+        },
+        weight: {
+            value: '',
+            unit: 'g'
+        }
     };
 
     const validationSchema = Yup.object().shape({
         name: Yup.string()
             .required('Name is required')
             .max(100, 'Name cannot exceed 100 characters'),
+        sku: Yup.string()
+            .required('SKU is required')
+            .min(3, 'SKU must be at least 3 characters'),
         description: Yup.string()
             .required('Description is required')
             .max(2000, 'Description cannot exceed 2000 characters'),
@@ -61,6 +81,19 @@ const CreateProduct = () => {
             .typeError('Price must be a number')
             .positive('Price must be a positive number')
             .required('Price is required'),
+        discountPrice: Yup.number()
+            .typeError('Discount price must be a number')
+            .min(0, 'Discount price cannot be negative')
+            .test('less-than-price', 'Discount price must be less than regular price', 
+                function(value) {
+                    return !value || value < this.parent.price;
+                }),
+        discountPercentage: Yup.number()
+            .typeError('Discount percentage must be a number')
+            .min(0, 'Discount percentage cannot be negative')
+            .max(100, 'Discount percentage cannot exceed 100'),
+        brand: Yup.string()
+            .required('Brand is required'),
         category: Yup.string()
             .required('Category is required')
             .oneOf(CATEGORIES, 'Please select a valid category'),
@@ -70,6 +103,30 @@ const CreateProduct = () => {
             .typeError('Stock must be a number')
             .min(0, 'Stock cannot be negative')
             .required('Stock is required'),
+        specifications: Yup.array().of(
+            Yup.object().shape({
+                name: Yup.string().required('Specification name is required'),
+                value: Yup.string().required('Specification value is required')
+            })
+        ),
+        variants: Yup.array().of(
+            Yup.object().shape({
+                color: Yup.string(),
+                size: Yup.string(),
+                stock: Yup.number().min(0),
+                price: Yup.number().min(0)
+            })
+        ),
+        dimensions: Yup.object().shape({
+            length: Yup.number().min(0),
+            width: Yup.number().min(0),
+            height: Yup.number().min(0),
+            unit: Yup.string().oneOf(['cm', 'in'])
+        }),
+        weight: Yup.object().shape({
+            value: Yup.number().min(0),
+            unit: Yup.string().oneOf(['kg', 'g', 'lb', 'oz'])
+        })
     });
 
     const handleImageChange = (e) => {
@@ -137,9 +194,17 @@ const CreateProduct = () => {
             const token = localStorage.getItem('token');
             const formData = new FormData();
             
-            // Append form fields
+            // Handle arrays and objects properly
             Object.keys(values).forEach(key => {
-                formData.append(key, values[key]);
+                if (key === 'specifications' || key === 'variants') {
+                    // Send empty arrays if no items
+                    formData.append(key, JSON.stringify(values[key] || []));
+                } else if (key === 'dimensions' || key === 'weight') {
+                    // Send objects as JSON strings
+                    formData.append(key, JSON.stringify(values[key] || {}));
+                } else {
+                    formData.append(key, values[key]);
+                }
             });
             
             // Append product images
@@ -207,6 +272,19 @@ const CreateProduct = () => {
                                 />
                             </Grid>
 
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="SKU"
+                                    name="sku"
+                                    fullWidth
+                                    value={values.sku}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.sku && Boolean(errors.sku)}
+                                    helperText={touched.sku && errors.sku}
+                                />
+                            </Grid>
+
                             <Grid item xs={12}>
                                 <TextField
                                     label="Description"
@@ -235,6 +313,40 @@ const CreateProduct = () => {
                                     helperText={touched.price && errors.price}
                                     InputProps={{
                                         startAdornment: '$',
+                                    }}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="Discount Price"
+                                    name="discountPrice"
+                                    type="number"
+                                    fullWidth
+                                    value={values.discountPrice}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.discountPrice && Boolean(errors.discountPrice)}
+                                    helperText={touched.discountPrice && errors.discountPrice}
+                                    InputProps={{
+                                        startAdornment: '$',
+                                    }}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="Discount Percentage"
+                                    name="discountPercentage"
+                                    type="number"
+                                    fullWidth
+                                    value={values.discountPercentage}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.discountPercentage && Boolean(errors.discountPercentage)}
+                                    helperText={touched.discountPercentage && errors.discountPercentage}
+                                    InputProps={{
+                                        endAdornment: '%',
                                     }}
                                 />
                             </Grid>
@@ -280,6 +392,19 @@ const CreateProduct = () => {
 
                             <Grid item xs={12} sm={6}>
                                 <TextField
+                                    label="Brand"
+                                    name="brand"
+                                    fullWidth
+                                    value={values.brand}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.brand && Boolean(errors.brand)}
+                                    helperText={touched.brand && errors.brand}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <TextField
                                     label="Seller"
                                     name="seller"
                                     fullWidth
@@ -289,6 +414,90 @@ const CreateProduct = () => {
                                     error={touched.seller && Boolean(errors.seller)}
                                     helperText={touched.seller && errors.seller}
                                 />
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle1" gutterBottom>
+                                    Dimensions
+                                </Typography>
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12} sm={3}>
+                                        <TextField
+                                            label="Length"
+                                            name="dimensions.length"
+                                            type="number"
+                                            fullWidth
+                                            value={values.dimensions.length}
+                                            onChange={handleChange}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={3}>
+                                        <TextField
+                                            label="Width"
+                                            name="dimensions.width"
+                                            type="number"
+                                            fullWidth
+                                            value={values.dimensions.width}
+                                            onChange={handleChange}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={3}>
+                                        <TextField
+                                            label="Height"
+                                            name="dimensions.height"
+                                            type="number"
+                                            fullWidth
+                                            value={values.dimensions.height}
+                                            onChange={handleChange}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={3}>
+                                        <FormControl fullWidth>
+                                            <InputLabel>Unit</InputLabel>
+                                            <Select
+                                                name="dimensions.unit"
+                                                value={values.dimensions.unit}
+                                                onChange={handleChange}
+                                            >
+                                                <MenuItem value="cm">cm</MenuItem>
+                                                <MenuItem value="in">in</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle1" gutterBottom>
+                                    Weight
+                                </Typography>
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField
+                                            label="Weight"
+                                            name="weight.value"
+                                            type="number"
+                                            fullWidth
+                                            value={values.weight.value}
+                                            onChange={handleChange}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                        <FormControl fullWidth>
+                                            <InputLabel>Unit</InputLabel>
+                                            <Select
+                                                name="weight.unit"
+                                                value={values.weight.unit}
+                                                onChange={handleChange}
+                                            >
+                                                <MenuItem value="g">g</MenuItem>
+                                                <MenuItem value="kg">kg</MenuItem>
+                                                <MenuItem value="lb">lb</MenuItem>
+                                                <MenuItem value="oz">oz</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                </Grid>
                             </Grid>
 
                             <Grid item xs={12}>

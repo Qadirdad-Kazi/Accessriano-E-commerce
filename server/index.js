@@ -10,6 +10,12 @@ const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const chatbotRoutes = require('./routes/chatbotRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const searchRoutes = require('./routes/searchRoutes');
+const apiRoutes = require('./routes/apiRoutes');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -35,11 +41,17 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/accessria
   });
 
 // API Routes
-app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api', apiRoutes);
 
 // API Documentation Route
 app.get('/api', (req, res) => {
@@ -50,15 +62,31 @@ app.get('/api', (req, res) => {
       auth: "/api/auth",
       orders: "/api/orders",
       analytics: "/api/analytics",
-      chatbot: "/api/chatbot"
+      chatbot: "/api/chatbot",
+      reviews: "/api/reviews",
+      categories: "/api/categories",
+      wishlist: "/api/wishlist",
+      contact: "/api/contact",
+      search: "/api/search"
     }
   });
+});
+
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Something broke!', error: err.message });
+  res.status(err.statusCode || 500).json({
+    success: false,
+    error: {
+      message: err.message || 'Something went wrong!',
+      code: err.code || 'INTERNAL_SERVER_ERROR'
+    }
+  });
 });
 
 // Start server

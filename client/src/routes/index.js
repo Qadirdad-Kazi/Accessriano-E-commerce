@@ -20,6 +20,10 @@ import AdminOrders from '../pages/AdminOrders';
 import Profile from '../pages/Profile';
 import RequestPasswordReset from '../pages/RequestPasswordReset';
 import PasswordReset from '../pages/PasswordReset';
+import About from '../pages/About';
+import Contact from '../pages/Contact';
+import Orders from '../pages/Orders';
+import Wishlist from '../pages/Wishlist';
 
 const LoadingFallback = () => (
   <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -31,18 +35,39 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/request-password-reset" element={<RequestPasswordReset />} />
         <Route path="/password-reset/:token" element={<PasswordReset />} />
+
+        {/* Protected Routes */}
         <Route 
           path="/checkout" 
           element={
             <ProtectedRoute>
               <Checkout />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/orders" 
+          element={
+            <ProtectedRoute>
+              <Orders />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/wishlist" 
+          element={
+            <ProtectedRoute>
+              <Wishlist />
             </ProtectedRoute>
           } 
         />
@@ -63,9 +88,19 @@ const AppRoutes = () => {
           } 
         />
         <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Admin Routes */}
+        <Route 
           path="/admin" 
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute adminOnly>
               <AdminDashboard />
             </ProtectedRoute>
           } 
@@ -73,7 +108,7 @@ const AppRoutes = () => {
         <Route 
           path="/admin/create-product" 
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute adminOnly>
               <CreateProduct />
             </ProtectedRoute>
           } 
@@ -81,7 +116,7 @@ const AppRoutes = () => {
         <Route 
           path="/admin/edit-product/:id" 
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute adminOnly>
               <EditProduct />
             </ProtectedRoute>
           } 
@@ -89,7 +124,7 @@ const AppRoutes = () => {
         <Route 
           path="/admin/analytics" 
           element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute adminOnly>
               <AnalyticsDashboard />
             </ProtectedRoute>
           } 
@@ -102,14 +137,9 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } 
         />
-        <Route 
-          path="/profile" 
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } 
-        />
+
+        {/* 404 Route - Keep this last */}
+        <Route path="*" element={<div>Page not found</div>} />
       </Routes>
     </Suspense>
   );

@@ -7,6 +7,12 @@ const ProductSchema = new mongoose.Schema({
     trim: true,
     maxLength: [100, 'Product name cannot exceed 100 characters']
   },
+  sku: {
+    type: String,
+    required: [true, 'Please enter product SKU'],
+    unique: true,
+    trim: true
+  },
   description: {
     type: String,
     required: [true, 'Please enter product description'],
@@ -16,6 +22,23 @@ const ProductSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'Please enter product price'],
     min: [0, 'Price cannot be negative']
+  },
+  discountPrice: {
+    type: Number,
+    min: [0, 'Discount price cannot be negative']
+  },
+  discountPercentage: {
+    type: Number,
+    min: [0, 'Discount percentage cannot be negative'],
+    max: [100, 'Discount percentage cannot exceed 100']
+  },
+  onSale: {
+    type: Boolean,
+    default: false
+  },
+  brand: {
+    type: String,
+    required: [true, 'Please enter product brand']
   },
   images: [{
     type: String,
@@ -55,124 +78,80 @@ const ProductSchema = new mongoose.Schema({
     min: [0, 'Stock cannot be negative'],
     default: 0
   },
-  averageRating: {
-    type: Number,
-    default: 0,
-    min: [0, 'Rating cannot be negative'],
-    max: [5, 'Rating cannot exceed 5'],
-    set: val => Math.round(val * 10) / 10 // Round to 1 decimal place
-  },
-  numberOfReviews: {
-    type: Number,
-    default: 0
-  },
-  features: [{
-    type: String,
-    trim: true
+  specifications: [{
+    name: { type: String, required: true },
+    value: { type: String, required: true }
   }],
-  specifications: {
-    type: Map,
-    of: String
-  },
-  tags: [{
-    type: String,
-    trim: true
+  variants: [{
+    color: String,
+    size: String,
+    stock: Number,
+    price: Number
   }],
-  brand: {
-    type: String,
-    trim: true
-  },
-  warranty: {
-    type: String,
-    trim: true
-  },
-  discount: {
-    type: Number,
-    min: [0, 'Discount cannot be negative'],
-    max: [100, 'Discount cannot exceed 100%'],
-    default: 0
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  qrImageUrl: String,  // URL from Cloudinary after upload for AR
-  ratings: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    order: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Order',
-      required: true
-    },
-    rating: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 5
-    },
-    review: {
+  dimensions: {
+    length: Number,
+    width: Number,
+    height: Number,
+    unit: {
       type: String,
-      required: true,
-      trim: true
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
+      enum: ['cm', 'in'],
+      default: 'cm'
     }
-  }],
-  featured: {
-    type: Boolean,
-    default: false
   },
+  weight: {
+    value: Number,
+    unit: {
+      type: String,
+      enum: ['kg', 'g', 'lb', 'oz'],
+      default: 'g'
+    }
+  },
+  ratings: {
+    type: Number,
+    default: 0
+  },
+  numOfReviews: {
+    type: Number,
+    default: 0
+  },
+  reviews: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      name: {
+        type: String,
+        required: true
+      },
+      rating: {
+        type: Number,
+        required: true
+      },
+      comment: {
+        type: String,
+        required: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   }
-}, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
 });
 
-// Update the updatedAt timestamp before saving
+// Calculate average rating before saving
 ProductSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  if (this.ratings.length > 0) {
-    this.averageRating = this.ratings.reduce((acc, item) => item.rating + acc, 0) / this.ratings.length;
+  if (this.reviews.length > 0) {
+    this.ratings = this.reviews.reduce((acc, item) => item.rating + acc, 0) / this.reviews.length;
   }
+  this.numOfReviews = this.reviews.length;
   next();
 });
-
-// Virtual for discounted price
-ProductSchema.virtual('discountedPrice').get(function() {
-  if (!this.discount) return this.price;
-  return this.price * (1 - this.discount / 100);
-});
-
-// Virtual for reviews
-ProductSchema.virtual('reviews', {
-  ref: 'Review',
-  localField: '_id',
-  foreignField: 'product'
-});
-
-// Always populate virtuals
-ProductSchema.set('toJSON', { virtuals: true });
-ProductSchema.set('toObject', { virtuals: true });
-
-// Create indexes for better search performance
-ProductSchema.index({ name: 'text', description: 'text', tags: 'text' });
-ProductSchema.index({ category: 1, brand: 1 });
-ProductSchema.index({ price: 1 });
-ProductSchema.index({ averageRating: -1 });
-ProductSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Product', ProductSchema);

@@ -41,6 +41,8 @@ const STATUS_COLORS = {
   completed: 'success'
 };
 
+const API_BASE_URL = 'http://localhost:5000/api';
+
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +62,7 @@ const OrderHistory = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       };
 
-      const response = await axios.get('http://localhost:5000/api/orders', config);
+      const response = await axios.get(`${API_BASE_URL}/orders`, config);
       
       if (response.data.success) {
         setOrders(response.data.data);
@@ -92,10 +94,33 @@ const OrderHistory = () => {
     });
   };
 
-  const handleReviewSubmitted = () => {
-    setReviewProduct(null);
-    fetchOrders(); // Refresh orders to update review status
-    toast.success('Thank you for your review!');
+  const handleReviewSubmit = async (reviewData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: { 
+          'x-auth-token': token,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      await axios.post(
+        `${API_BASE_URL}/reviews`,
+        {
+          product: reviewProduct.productId,
+          review: reviewData.review,
+          rating: reviewData.rating
+        },
+        config
+      );
+
+      setReviewProduct(null);
+      fetchOrders(); // Refresh orders to update review status
+      toast.success('Thank you for your review!');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      toast.error(error.response?.data?.message || 'Failed to submit review');
+    }
   };
 
   if (loading) {
@@ -224,29 +249,15 @@ const OrderHistory = () => {
         ))
       )}
 
-      {/* Review Dialog */}
-      <Dialog 
-        open={!!reviewProduct} 
-        onClose={() => setReviewProduct(null)}
-        maxWidth="sm"
-        fullWidth
-      >
-        {reviewProduct && (
-          <>
-            <DialogTitle>
-              Review for {reviewProduct.productName}
-            </DialogTitle>
-            <DialogContent>
-              <ReviewForm
-                productId={reviewProduct.productId}
-                orderId={reviewProduct.orderId}
-                onReviewSubmitted={handleReviewSubmitted}
-                onClose={() => setReviewProduct(null)}
-              />
-            </DialogContent>
-          </>
-        )}
-      </Dialog>
+      {/* Review Form */}
+      {reviewProduct && (
+        <ReviewForm
+          open={!!reviewProduct}
+          onClose={() => setReviewProduct(null)}
+          onSubmit={handleReviewSubmit}
+          productName={reviewProduct.productName}
+        />
+      )}
     </Container>
   );
 };

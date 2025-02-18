@@ -44,9 +44,18 @@
     "cod": "Cash on Delivery"
   },
   "chatbot": {
+    "title": "Chat with Us",
+    "placeholder": "Type your message here...",
     "welcome": "Hello! How can I help you today?",
     "productHelp": "Would you like help finding a product?",
     "orderHelp": "Need help with your order?",
-    "support": "Contact Support"
+    "support": "Contact Support",
+    "loading": "Thinking...",
+    "error": "Sorry, something went wrong. Please try again.",
+    "suggestions": {
+      "products": "Show me products",
+      "orders": "Check my orders",
+      "support": "I need help"
+    }
   }
 }

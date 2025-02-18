@@ -10,6 +10,7 @@
     "ajv": "8.12.0",
     "ajv-keywords": "5.1.0",
     "axios": "^1.6.7",
+    "date-fns": "^4.1.0",
     "formik": "^2.4.6",
     "framer-motion": "^10.16.4",
     "i18next": "^24.2.2",
@@ -50,5 +51,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "typescript": "^4.9.5"
   }
 }

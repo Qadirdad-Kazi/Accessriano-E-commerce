@@ -34,6 +34,7 @@ import {
   AttachMoney as MoneyIcon,
   Schedule as PendingIcon,
   Visibility as VisibilityIcon,
+  RateReview as ReviewIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -188,11 +189,16 @@ const AdminDashboard = () => {
   const [tabIndex, setTabIndex] = useState(0);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [updatingOrder, setUpdatingOrder] = useState(null);
   const navigate = useNavigate();
+  const reviewsPerPage = 10;
 
   // Order summary calculations
   const getOrderSummary = () => {
@@ -240,9 +246,34 @@ const AdminDashboard = () => {
     }
   };
 
+  // Fetch reviews
+  const fetchReviews = async (page = 1) => {
+    setReviewsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/reviews?page=${page}&limit=${reviewsPerPage}`, {
+        headers: { 'x-auth-token': token }
+      });
+      setReviews(response.data.data);
+      setReviewsTotal(response.data.pagination.total);
+      setReviewsPage(page);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      toast.error('Failed to fetch reviews');
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchProducts();
-    fetchOrders();
+    const fetchData = async () => {
+      setLoadingProducts(true);
+      setLoadingOrders(true);
+      await Promise.all([fetchProducts(), fetchOrders(), fetchReviews()]);
+      setLoadingProducts(false);
+      setLoadingOrders(false);
+    };
+    fetchData();
     // Poll for updates every 30 seconds
     const intervalId = setInterval(() => {
       fetchOrders();
@@ -318,6 +349,91 @@ const AdminDashboard = () => {
 
   const summary = getOrderSummary();
 
+  const handleReviewPageChange = (newPage) => {
+    setReviewsPage(newPage);
+  };
+
+  const ReviewsTable = () => (
+    <Box>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Product</TableCell>
+              <TableCell>User</TableCell>
+              <TableCell>Rating</TableCell>
+              <TableCell>Comment</TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {reviewsLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  <CircularProgress />
+                </TableCell>
+              </TableRow>
+            ) : reviews.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  No reviews found
+                </TableCell>
+              </TableRow>
+            ) : (
+              reviews.map((review) => (
+                <TableRow key={review._id}>
+                  <TableCell>{review.product?.name || 'N/A'}</TableCell>
+                  <TableCell>{review.user?.name || 'N/A'}</TableCell>
+                  <TableCell>{review.rating}</TableCell>
+                  <TableCell>{review.comment}</TableCell>
+                  <TableCell>
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="View Details">
+                      <IconButton
+                        size="small"
+                        onClick={() => navigate(`/product/${review.productId}`)}
+                      >
+                        <VisibilityIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      {!reviewsLoading && reviews.length > 0 && (
+        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+          <Button
+            disabled={reviewsPage === 1}
+            onClick={() => handleReviewPageChange(reviewsPage - 1)}
+          >
+            Previous
+          </Button>
+          <Typography sx={{ mx: 2, alignSelf: 'center' }}>
+            Page {reviewsPage} of {Math.ceil(reviewsTotal / reviewsPerPage)}
+          </Typography>
+          <Button
+            disabled={reviewsPage >= Math.ceil(reviewsTotal / reviewsPerPage)}
+            onClick={() => handleReviewPageChange(reviewsPage + 1)}
+          >
+            Next
+          </Button>
+        </Box>
+      )}
+    </Box>
+  );
+
+  useEffect(() => {
+    if (tabIndex === 3) { // Reviews tab
+      fetchReviews(reviewsPage);
+    }
+  }, [tabIndex, reviewsPage]);
+
   return (
     <Container sx={{ mt: 4 }}>
       <Typography variant="h4" gutterBottom>
@@ -360,6 +476,15 @@ const AdminDashboard = () => {
             icon={PendingIcon}
             color="#ff9800"
             secondaryText="Orders being processed"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <SummaryCard
+            title="Total Reviews"
+            value={reviews.length}
+            icon={ReviewIcon}
+            color="#9c27b0"
+            secondaryText="All product reviews"
           />
         </Grid>
       </Grid>
@@ -542,6 +667,7 @@ const AdminDashboard = () => {
       )}
 
       {tabIndex === 2 && <AnalyticsDashboard />}
+      {tabIndex === 3 && <ReviewsTable />}
       <OrderDetailsDialog 
         open={!!selectedOrder}
         order={selectedOrder}

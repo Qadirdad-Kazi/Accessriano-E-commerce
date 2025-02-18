@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { Star } from '@mui/icons-material';
 
-function ReviewForm({ open, onClose, onSubmit, initialRating = 0 }) {
+function ReviewForm({ open, onClose, onSubmit, initialRating = 0, productName }) {
   const [rating, setRating] = useState(initialRating);
   const [review, setReview] = useState('');
 
@@ -24,7 +24,7 @@ function ReviewForm({ open, onClose, onSubmit, initialRating = 0 }) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Write a Review</DialogTitle>
+      <DialogTitle>Write a Review {productName && `for ${productName}`}</DialogTitle>
       <DialogContent>
         <Box sx={{ mb: 2, mt: 1 }}>
           <Rating
@@ -36,7 +36,6 @@ function ReviewForm({ open, onClose, onSubmit, initialRating = 0 }) {
           />
         </Box>
         <TextField
-          autoFocus
           margin="dense"
           label="Your Review"
           fullWidth
@@ -44,13 +43,18 @@ function ReviewForm({ open, onClose, onSubmit, initialRating = 0 }) {
           rows={4}
           value={review}
           onChange={(e) => setReview(e.target.value)}
+          required
         />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="primary">
           Cancel
         </Button>
-        <Button onClick={handleSubmit} color="primary" disabled={!rating || !review.trim()}>
+        <Button 
+          onClick={handleSubmit} 
+          color="primary" 
+          disabled={!rating || !review.trim()}
+        >
           Submit
         </Button>
       </DialogActions>

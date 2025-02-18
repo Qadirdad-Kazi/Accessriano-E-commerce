@@ -1,31 +1,77 @@
 const Review = require('../models/Review');
 const Product = require('../models/Product');
+const Order = require('../models/Order');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
 exports.createReview = catchAsync(async (req, res) => {
-    // Check if user has purchased the product
-    const hasPurchased = await Order.exists({
-        user: req.user._id,
-        'products.product': req.body.product,
-        status: 'delivered'
-    });
+    console.log('Creating review with data:', req.body);
+    console.log('User:', req.user);
 
-    if (!hasPurchased) {
-        throw new AppError('You can only review products you have purchased', 403);
+    try {
+        // Check if user has purchased the product
+        const hasPurchased = await Order.exists({
+            user: req.user._id,
+            'products.product': req.body.product,
+            status: 'delivered',
+            paymentStatus: 'completed'
+        });
+
+        console.log('Has purchased:', hasPurchased);
+
+        if (!hasPurchased) {
+            throw new AppError('You can only review products you have purchased and received', 403);
+        }
+
+        // Check if user has already reviewed this product
+        const existingReview = await Review.findOne({
+            user: req.user._id,
+            product: req.body.product
+        });
+
+        console.log('Existing review:', existingReview);
+
+        if (existingReview) {
+            throw new AppError('You have already reviewed this product', 400);
+        }
+
+        // Find the order to mark the product as reviewed
+        const order = await Order.findOne({
+            user: req.user._id,
+            'products.product': req.body.product,
+            status: 'delivered'
+        });
+
+        if (order) {
+            // Mark the specific product as reviewed
+            const productItem = order.products.find(p => 
+                p.product.toString() === req.body.product.toString()
+            );
+            if (productItem) {
+                productItem.reviewed = true;
+                await order.save();
+            }
+        }
+
+        const review = await Review.create({
+            product: req.body.product,
+            user: req.user._id,
+            rating: req.body.rating,
+            review: req.body.review
+        });
+
+        console.log('Created review:', review);
+
+        await review.populate('user', 'name avatar');
+
+        res.status(201).json({
+            success: true,
+            data: review
+        });
+    } catch (error) {
+        console.error('Error in createReview:', error);
+        throw error;
     }
-
-    const review = await Review.create({
-        ...req.body,
-        user: req.user._id
-    });
-
-    await review.populate('user', 'name avatar');
-
-    res.status(201).json({
-        success: true,
-        data: review
-    });
 });
 
 exports.getProductReviews = catchAsync(async (req, res) => {
@@ -139,15 +185,15 @@ exports.reportReview = catchAsync(async (req, res) => {
 
 // Admin only endpoints
 exports.getReportedReviews = catchAsync(async (req, res) => {
+    // Check if user is admin
     if (!req.user.isAdmin) {
-        throw new AppError('Not authorized', 403);
+        throw new AppError('Not authorized to access this route', 403);
     }
 
-    const reviews = await Review.find({
-        reportedBy: { $exists: true, $not: { $size: 0 } }
-    })
-        .populate('user', 'name email')
-        .populate('product', 'name');
+    const reviews = await Review.find({ reportedBy: { $exists: true, $not: { $size: 0 } } })
+        .populate('user', 'name avatar')
+        .populate('product', 'name images')
+        .sort('-createdAt');
 
     res.status(200).json({
         success: true,
@@ -155,32 +201,63 @@ exports.getReportedReviews = catchAsync(async (req, res) => {
     });
 });
 
-exports.moderateReview = catchAsync(async (req, res) => {
+exports.getAllReviews = catchAsync(async (req, res) => {
+    // Check if user is admin
     if (!req.user.isAdmin) {
-        throw new AppError('Not authorized', 403);
+        throw new AppError('Not authorized to access this route', 403);
     }
 
-    const { action } = req.body;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const reviews = await Review.find()
+        .populate('user', 'name email')
+        .populate('product', 'name images')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+    const total = await Review.countDocuments();
+
+    res.status(200).json({
+        success: true,
+        data: reviews,
+        pagination: {
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit)
+        }
+    });
+});
+
+exports.moderateReview = catchAsync(async (req, res) => {
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+        throw new AppError('Not authorized to access this route', 403);
+    }
+
     const review = await Review.findById(req.params.id);
 
     if (!review) {
         throw new AppError('Review not found', 404);
     }
 
-    if (action === 'remove') {
+    // Update review moderation status
+    review.verified = req.body.verified;
+    if (req.body.delete) {
         await review.remove();
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: 'Review removed successfully'
+            message: 'Review deleted successfully'
         });
-    } else if (action === 'clear-reports') {
-        review.reportedBy = [];
-        await review.save();
-        res.status(200).json({
-            success: true,
-            message: 'Reports cleared successfully'
-        });
-    } else {
-        throw new AppError('Invalid action', 400);
     }
+
+    await review.save();
+
+    res.status(200).json({
+        success: true,
+        data: review
+    });
 });

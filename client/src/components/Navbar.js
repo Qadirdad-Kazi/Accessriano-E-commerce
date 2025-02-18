@@ -17,6 +17,11 @@ import {
   useMediaQuery,
   Stack,
   Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
 } from '@mui/material';
 import {
   ShoppingCart as CartIcon,
@@ -25,24 +30,28 @@ import {
   AdminPanelSettings as AdminIcon,
   Home as HomeIcon,
   Category as CategoryIcon,
-  FilterList as FilterIcon
+  FilterList as FilterIcon,
+  Close as CloseIcon,
+  Favorite as FavoriteIcon,
+  LocalShipping as ShippingIcon,
+  Info as InfoIcon,
+  ContactMail as ContactMailIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
-import LanguageSwitcher from './LanguageSwitcher';
-import SearchFilters from './SearchFilters'; // ✅ Import SearchFilters
-
-const MotionIconButton = motion(IconButton);
+import { MotionIconButton } from './MotionComponents';
+import SearchBar from './SearchBar';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { cart } = useCart();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false); // ✅ State for filter drawer
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -62,92 +71,181 @@ const Navbar = () => {
     handleClose();
   };
 
-  const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const menuItems = [
+    { text: 'Home', icon: <HomeIcon />, path: '/' },
+    { text: 'Categories', icon: <CategoryIcon />, path: '/categories' },
+    { text: 'About', icon: <InfoIcon />, path: '/about' },
+    { text: 'Contact', icon: <ContactMailIcon />, path: '/contact' },
+  ];
+
+  const userMenuItems = [
+    { text: 'Profile', icon: <PersonIcon />, path: '/profile' },
+    { text: 'Orders', icon: <ShippingIcon />, path: '/orders' },
+    { text: 'Wishlist', icon: <FavoriteIcon />, path: '/wishlist' },
+  ];
+
+  // Add admin dashboard to both menus if user is admin
+  if (user?.isAdmin) {
+    menuItems.push({ text: 'Admin Dashboard', icon: <AdminIcon />, path: '/admin' });
+    userMenuItems.unshift({ text: 'Admin Dashboard', icon: <AdminIcon />, path: '/admin' });
+  }
 
   return (
-    <AppBar position="sticky" elevation={0} sx={{ backgroundColor: 'primary.dark' }}>
-      <Container maxWidth="lg">
+    <AppBar position="sticky" sx={{ bgcolor: 'background.paper', color: 'text.primary' }}>
+      <Container maxWidth="xl">
         <Toolbar disableGutters>
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+
           <Typography
             variant="h6"
+            noWrap
             component={Link}
             to="/"
             sx={{
-              display: { xs: 'none', sm: 'block' },
-              color: 'white',
+              mr: 2,
+              fontFamily: 'monospace',
+              fontWeight: 700,
+              letterSpacing: '.3rem',
+              color: 'inherit',
               textDecoration: 'none',
-              fontWeight: 600,
-              letterSpacing: 1
+              flexGrow: isMobile ? 0 : 1,
             }}
           >
             ACCESSRIANO
           </Typography>
 
           {!isMobile && (
-            <Stack direction="row" spacing={2} sx={{ ml: 4 }}>
-              <Button color="inherit" startIcon={<HomeIcon />} component={Link} to="/">
-                Home
-              </Button>
-              <Button color="inherit" startIcon={<CategoryIcon />} component={Link} to="/categories">
-                Categories
-              </Button>
+            <Stack direction="row" spacing={2} sx={{ flexGrow: 1 }}>
+              {menuItems.map((item) => (
+                <Button
+                  key={item.text}
+                  startIcon={item.icon}
+                  component={Link}
+                  to={item.path}
+                  color="inherit"
+                >
+                  {item.text}
+                </Button>
+              ))}
             </Stack>
           )}
 
-          {/* Filter Button to Open Drawer */}
-          <MotionIconButton color="inherit" onClick={() => setIsFilterOpen(true)}>
-            <FilterIcon />
-          </MotionIconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SearchBar />
+            
+            {user ? (
+              <>
+                <Tooltip title="Cart">
+                  <MotionIconButton
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    color="inherit"
+                    component={Link}
+                    to="/cart"
+                  >
+                    <Badge badgeContent={cart?.items?.length || 0} color="primary">
+                      <CartIcon />
+                    </Badge>
+                  </MotionIconButton>
+                </Tooltip>
 
-          {/* Filter Drawer */}
-          <Drawer anchor="right" open={isFilterOpen} onClose={() => setIsFilterOpen(false)}>
-            <Box sx={{ width: 300, p: 2 }}>
-              <Typography variant="h6">Filters</Typography>
-              <SearchFilters
-                filters={{ price: { min: 0, max: 100 }, rating: 0, category: '', brands: [], tags: [] }}
-                selectedFilters={{}}
-                onFilterChange={() => {}}
-                onClearFilters={() => {}}
-                loading={false}
-              />
-            </Box>
-          </Drawer>
+                <Tooltip title="Account settings">
+                  <IconButton onClick={handleMenu} color="inherit">
+                    <Avatar
+                      sx={{ width: 32, height: 32 }}
+                      src={user.avatar}
+                      alt={user.name}
+                    >
+                      {user.name?.charAt(0)}
+                    </Avatar>
+                  </IconButton>
+                </Tooltip>
 
-          <Box sx={{ flexGrow: 1 }} />
-
-          <LanguageSwitcher />
-
-          <MotionIconButton color="inherit" component={Link} to="/cart">
-            <Badge badgeContent={cartItemCount} color="secondary">
-              <CartIcon />
-            </Badge>
-          </MotionIconButton>
-
-          {user ? (
-            <>
-              <Tooltip title="Account settings">
-                <IconButton onClick={handleMenu} size="small" color="inherit">
-                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-                    {user.name ? user.name[0].toUpperCase() : <PersonIcon />}
-                  </Avatar>
-                </IconButton>
-              </Tooltip>
-              <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
-                <MenuItem component={Link} to="/profile" onClick={handleClose}>Profile</MenuItem>
-                <MenuItem component={Link} to="/order-history" onClick={handleClose}>Orders</MenuItem>
-                {user.role === 'admin' && <MenuItem component={Link} to="/admin" onClick={handleClose}>Admin</MenuItem>}
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-              </Menu>
-            </>
-          ) : (
-            <Button color="inherit" variant="outlined" component={Link} to="/login">
-              Login
-            </Button>
-          )}
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleClose}
+                  onClick={handleClose}
+                  PaperProps={{
+                    elevation: 0,
+                    sx: {
+                      overflow: 'visible',
+                      filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                      mt: 1.5,
+                      '& .MuiAvatar-root': {
+                        width: 32,
+                        height: 32,
+                        ml: -0.5,
+                        mr: 1,
+                      },
+                    },
+                  }}
+                  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                >
+                  {userMenuItems.map((item) => (
+                    <MenuItem
+                      key={item.text}
+                      onClick={() => {
+                        handleClose();
+                        navigate(item.path);
+                      }}
+                    >
+                      <ListItemIcon>{item.icon}</ListItemIcon>
+                      <ListItemText primary={item.text} />
+                    </MenuItem>
+                  ))}
+                  <Divider />
+                  <MenuItem onClick={handleLogout}>
+                    <ListItemIcon>
+                      <CloseIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Logout" />
+                  </MenuItem>
+                </Menu>
+              </>
+            ) : (
+              <Button color="inherit" component={Link} to="/login">
+                Login
+              </Button>
+            )}
+          </Box>
         </Toolbar>
       </Container>
+
+      <Drawer
+        anchor="left"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+      >
+        <List sx={{ width: 250 }}>
+          {menuItems.map((item) => (
+            <ListItem
+              button
+              key={item.text}
+              component={Link}
+              to={item.path}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItem>
+          ))}
+        </List>
+      </Drawer>
     </AppBar>
   );
 };
 
 export default Navbar;
+

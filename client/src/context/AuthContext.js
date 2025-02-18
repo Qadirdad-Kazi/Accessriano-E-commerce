@@ -8,6 +8,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
         const initializeAuth = () => {
@@ -16,15 +17,15 @@ export const AuthProvider = ({ children }) => {
                 try {
                     const decoded = jwtDecode(token);
                     if (decoded.exp * 1000 < Date.now()) {
-                        localStorage.removeItem('token');
-                        setUser(null);
+                        handleLogout();
                     } else {
                         setUser(decoded.user);
+                        setIsAuthenticated(true);
+                        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                     }
                 } catch (error) {
                     console.error('Token decode error:', error);
-                    localStorage.removeItem('token');
-                    setUser(null);
+                    handleLogout();
                 }
             }
             setLoading(false);
@@ -32,6 +33,13 @@ export const AuthProvider = ({ children }) => {
 
         initializeAuth();
     }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        delete axios.defaults.headers.common['Authorization'];
+        setUser(null);
+        setIsAuthenticated(false);
+    };
 
     const login = async (email, password) => {
         try {
@@ -45,6 +53,8 @@ export const AuthProvider = ({ children }) => {
 
             const decoded = jwtDecode(token);
             setUser(decoded.user);
+            setIsAuthenticated(true);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
             return { success: true };
         } catch (error) {
@@ -64,6 +74,8 @@ export const AuthProvider = ({ children }) => {
 
             const decoded = jwtDecode(token);
             setUser(decoded.user);
+            setIsAuthenticated(true);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
             return { success: true };
         } catch (error) {
@@ -76,22 +88,13 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
+        handleLogout();
     };
 
     const updateProfile = async (userData) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.put(
-                `${API_BASE_URL}/users/profile`,
-                userData,
-                {
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
-
-            setUser(response.data.data);
+            const response = await axios.put(`${API_BASE_URL}/auth/profile`, userData);
+            setUser(response.data.user);
             return { success: true };
         } catch (error) {
             console.error('Profile update error:', error);
@@ -105,12 +108,11 @@ export const AuthProvider = ({ children }) => {
     const value = {
         user,
         loading,
+        isAuthenticated,
         login,
         register,
         logout,
-        updateProfile,
-        isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin'
+        updateProfile
     };
 
     return (

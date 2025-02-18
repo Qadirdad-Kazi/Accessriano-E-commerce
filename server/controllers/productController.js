@@ -5,8 +5,41 @@ const Order = require('../models/Order'); // Assuming Order model is defined in 
 // Add a new product
 exports.addProduct = async (req, res) => {
   try {
-    const productData = req.body;
+    const productData = { ...req.body };
     
+    // Parse JSON strings back to objects/arrays
+    if (productData.specifications) {
+      try {
+        productData.specifications = JSON.parse(productData.specifications);
+      } catch (e) {
+        productData.specifications = [];
+      }
+    }
+
+    if (productData.variants) {
+      try {
+        productData.variants = JSON.parse(productData.variants);
+      } catch (e) {
+        productData.variants = [];
+      }
+    }
+
+    if (productData.dimensions) {
+      try {
+        productData.dimensions = JSON.parse(productData.dimensions);
+      } catch (e) {
+        delete productData.dimensions;
+      }
+    }
+
+    if (productData.weight) {
+      try {
+        productData.weight = JSON.parse(productData.weight);
+      } catch (e) {
+        delete productData.weight;
+      }
+    }
+
     // Handle product images
     if (req.files && req.files['images']) {
       productData.images = req.files['images'].map(file => file.path);
@@ -23,7 +56,7 @@ exports.addProduct = async (req, res) => {
     }
 
     // Validate required fields
-    const requiredFields = ['name', 'description', 'price', 'category', 'seller', 'stock'];
+    const requiredFields = ['name', 'sku', 'description', 'price', 'category', 'seller', 'stock', 'brand'];
     for (const field of requiredFields) {
       if (!productData[field]) {
         return res.status(400).json({ 
@@ -31,6 +64,18 @@ exports.addProduct = async (req, res) => {
           message: `${field} is required` 
         });
       }
+    }
+
+    // Convert numeric strings to numbers
+    ['price', 'stock', 'discountPrice', 'discountPercentage'].forEach(field => {
+      if (productData[field]) {
+        productData[field] = Number(productData[field]);
+      }
+    });
+
+    // Set onSale flag if discount is present
+    if (productData.discountPrice || productData.discountPercentage) {
+      productData.onSale = true;
     }
 
     // Create and save the product
@@ -43,7 +88,7 @@ exports.addProduct = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    console.error('Error in addProduct:', error);
+    console.warn('Error in addProduct:', error);
     res.status(500).json({ 
       success: false,
       message: 'Error adding product', 
