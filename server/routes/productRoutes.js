@@ -58,6 +58,7 @@ router.get('/', productController.getAllProducts);
 router.get('/featured', productController.getFeaturedProducts);
 router.get('/filters', productController.getFilters);
 router.get('/search', productController.searchProducts);
+router.get('/related/:id', productController.getRelatedProducts);
 router.get('/:id', productController.getProductById);
 router.get('/category/:category', productController.getProductsByCategory);
 

@@ -745,6 +745,47 @@ exports.getProductReviews = async (req, res) => {
   }
 };
 
+// Get related products
+exports.getRelatedProducts = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 8, category } = req.query;
+
+    // Find the current product to get its category
+    const currentProduct = await Product.findById(id);
+    if (!currentProduct) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    // Find related products in the same category, excluding the current product
+    const query = {
+      _id: { $ne: id },
+      category: category || currentProduct.category,
+      status: 'active'
+    };
+
+    const relatedProducts = await Product.find(query)
+      .limit(parseInt(limit))
+      .select('name price description images stock category brand discountPrice onSale rating')
+      .sort('-rating');
+
+    res.status(200).json({
+      success: true,
+      data: relatedProducts
+    });
+  } catch (error) {
+    console.error('Error in getRelatedProducts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching related products',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   addProduct: exports.addProduct,
   getAllProducts: exports.getAllProducts,
@@ -761,5 +802,6 @@ module.exports = {
   deleteProductReview: exports.deleteProductReview,
   addReview: exports.addReview,
   getProductReviews: exports.getProductReviews,
-  getFilters: exports.getFilters
+  getFilters: exports.getFilters,
+  getRelatedProducts: exports.getRelatedProducts
 };
