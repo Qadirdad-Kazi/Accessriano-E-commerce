@@ -106,7 +106,7 @@ const Products = ({ admin }) => {
 
   const handleProductClick = (productId) => {
     if (admin) {
-      navigate(`/admin/products/${productId}`);
+      navigate(`/admin/product/edit/${productId}`);
     } else {
       navigate(`/product/${productId}`);
     }

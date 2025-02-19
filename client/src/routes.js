@@ -17,6 +17,7 @@ const Checkout = React.lazy(() => import('./pages/Checkout'));
 const About = React.lazy(() => import('./pages/About'));
 const Contact = React.lazy(() => import('./pages/Contact'));
 const Products = React.lazy(() => import('./pages/Products'));
+const EditProduct = React.lazy(() => import('./pages/EditProduct'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requireAdmin }) => {
@@ -110,6 +111,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requireAdmin>
             <Products admin />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/product/edit/:id"
+        element={
+          <ProtectedRoute requireAdmin>
+            <EditProduct />
           </ProtectedRoute>
         }
       />
