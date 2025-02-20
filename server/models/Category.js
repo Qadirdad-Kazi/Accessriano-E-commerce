@@ -15,14 +15,6 @@ const categorySchema = new mongoose.Schema({
     image: {
         type: String,
         required: [true, 'Category image is required']
-    },
-    tags: [{
-        type: String,
-        trim: true
-    }],
-    featured: {
-        type: Boolean,
-        default: false
     }
 }, {
     timestamps: true

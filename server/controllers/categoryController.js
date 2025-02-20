@@ -1,7 +1,9 @@
 const Category = require('../models/Category');
+const Product = require('../models/Product'); 
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
+// ✅ Fetch all categories
 exports.getAllCategories = catchAsync(async (req, res) => {
     const categories = await Category.find().sort('name');
     res.status(200).json({
@@ -10,6 +12,7 @@ exports.getAllCategories = catchAsync(async (req, res) => {
     });
 });
 
+// ✅ Fetch a single category by ID
 exports.getCategory = catchAsync(async (req, res) => {
     const category = await Category.findById(req.params.id);
     if (!category) {
@@ -21,8 +24,29 @@ exports.getCategory = catchAsync(async (req, res) => {
     });
 });
 
+// ✅ Fetch category along with all related products
+exports.getCategoryWithProducts = catchAsync(async (req, res) => {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+        throw new AppError('Category not found', 404);
+    }
+
+    // Fetch products and populate category field
+    const products = await Product.find({ category: category._id }).populate('category');
+
+    res.status(200).json({
+        success: true,
+        data: {
+            category,
+            products
+        }
+    });
+});
+
+
+// ✅ Create a new category (Admin Only)
 exports.createCategory = catchAsync(async (req, res) => {
-    if (!req.user.isAdmin) {
+    if (!req.user || !req.user.isAdmin) {
         throw new AppError('Not authorized to create categories', 403);
     }
     const category = await Category.create(req.body);
@@ -32,8 +56,9 @@ exports.createCategory = catchAsync(async (req, res) => {
     });
 });
 
+// ✅ Update a category by ID (Admin Only)
 exports.updateCategory = catchAsync(async (req, res) => {
-    if (!req.user.isAdmin) {
+    if (!req.user || !req.user.isAdmin) {
         throw new AppError('Not authorized to update categories', 403);
     }
     const category = await Category.findByIdAndUpdate(
@@ -50,8 +75,9 @@ exports.updateCategory = catchAsync(async (req, res) => {
     });
 });
 
+// ✅ Delete a category by ID (Admin Only)
 exports.deleteCategory = catchAsync(async (req, res) => {
-    if (!req.user.isAdmin) {
+    if (!req.user || !req.user.isAdmin) {
         throw new AppError('Not authorized to delete categories', 403);
     }
     const category = await Category.findByIdAndDelete(req.params.id);
@@ -60,6 +86,7 @@ exports.deleteCategory = catchAsync(async (req, res) => {
     }
     res.status(200).json({
         success: true,
+        message: 'Category deleted successfully',
         data: {}
     });
 });

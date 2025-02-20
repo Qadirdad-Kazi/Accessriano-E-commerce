@@ -44,47 +44,15 @@ const ProductSchema = new mongoose.Schema({
     type: String,
     required: true
   }],
-  qrCode: {
-    type: String,
-    required: false
-  },
   category: {
-    type: String,
-    required: [true, 'Please select category for this product'],
-    enum: {
-      values: [
-        'Electronics',
-        'Cameras',
-        'Laptops',
-        'Accessories',
-        'Headphones',
-        'Audio',
-        'Gaming',
-        'Mobile Phones',
-        'Tablets',
-        'Wearables',
-        'Computer Parts',
-        'Smart Home',
-        'Networking',
-        'Storage',
-        'Software',
-        'Office Equipment'
-      ],
-      message: 'Please select correct category for product'
-    }
+    type: mongoose.Schema.Types.ObjectId,  // 🔥 FIXED: Reference to Category model
+    ref: 'Category',
+    required: [true, 'Please select a category for this product']
   },
   subCategory: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category', // Reference sub-category if needed
     required: false
-  },
-  categoryMetadata: {
-    displayName: String,
-    description: String,
-    icon: String,
-    featured: {
-      type: Boolean,
-      default: false
-    }
   },
   seller: {
     type: String,
@@ -163,8 +131,8 @@ const ProductSchema = new mongoose.Schema({
   }
 });
 
-// Calculate average rating before saving
-ProductSchema.pre('save', function(next) {
+// ✅ Middleware: Calculate average rating before saving
+ProductSchema.pre('save', function (next) {
   if (this.reviews.length > 0) {
     this.ratings = this.reviews.reduce((acc, item) => item.rating + acc, 0) / this.reviews.length;
   }

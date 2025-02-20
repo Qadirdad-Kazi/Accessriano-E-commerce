@@ -22,7 +22,6 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Popover,
 } from '@mui/material';
 import {
   ShoppingCart as CartIcon,
@@ -31,8 +30,6 @@ import {
   AdminPanelSettings as AdminIcon,
   Home as HomeIcon,
   Category as CategoryIcon,
-  FilterList as FilterIcon,
-  Close as CloseIcon,
   Favorite as FavoriteIcon,
   LocalShipping as ShippingIcon,
   Info as InfoIcon,
@@ -42,7 +39,6 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { motion } from 'framer-motion';
 import { MotionIconButton } from './MotionComponents';
 import SearchBar from './SearchBar';
 import api from '../utils/api';
@@ -53,7 +49,6 @@ const Navbar = () => {
   const { cart } = useCart();
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categoryAnchorEl, setCategoryAnchorEl] = useState(null);
   const theme = useTheme();
@@ -62,9 +57,9 @@ const Navbar = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await api.get('/products/categories');
+        const response = await api.get('/categories');
         if (response.data.success) {
-          setCategories(response.data.categories);
+          setCategories(response.data?.data || []); // ✅ Fixed: Ensure data is correctly set
         }
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -74,21 +69,10 @@ const Navbar = () => {
     fetchCategories();
   }, []);
 
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleCategoryClick = (event) => {
-    setCategoryAnchorEl(event.currentTarget);
-  };
-
-  const handleCategoryClose = () => {
-    setCategoryAnchorEl(null);
-  };
+  const handleMenu = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+  const handleCategoryClick = (event) => setCategoryAnchorEl(event.currentTarget);
+  const handleCategoryClose = () => setCategoryAnchorEl(null);
 
   const handleLogout = async () => {
     try {
@@ -125,37 +109,22 @@ const Navbar = () => {
       anchorEl={categoryAnchorEl}
       open={Boolean(categoryAnchorEl)}
       onClose={handleCategoryClose}
-      anchorOrigin={{
-        vertical: 'bottom',
-        horizontal: 'left',
-      }}
-      transformOrigin={{
-        vertical: 'top',
-        horizontal: 'left',
-      }}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
     >
-      <MenuItem 
-        component={Link} 
-        to="/categories"
-        onClick={handleCategoryClose}
-      >
-        <ListItemIcon>
-          <CategoryIcon />
-        </ListItemIcon>
+      <MenuItem component={Link} to="/categories" onClick={handleCategoryClose}>
+        <ListItemIcon><CategoryIcon /></ListItemIcon>
         <ListItemText>All Categories</ListItemText>
       </MenuItem>
       <Divider />
       {categories.map((category) => (
         <MenuItem
-          key={category.name}
+          key={category._id || category.name} // ✅ Fixed: Ensures unique key
           component={Link}
-          to={`/products?category=${encodeURIComponent(category.name)}`}
+          to={`/products?category=${encodeURIComponent(category.name)}`} // ✅ Fixed: Proper navigation
           onClick={handleCategoryClose}
         >
-          <ListItemText>
-            {category.name}
-            {category.count && ` (${category.count})`}
-          </ListItemText>
+          <ListItemText>{category.name}</ListItemText>
         </MenuItem>
       ))}
     </Menu>
@@ -166,20 +135,13 @@ const Navbar = () => {
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           {isMobile && (
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={() => setMobileMenuOpen(true)}
-              sx={{ mr: 2 }}
-            >
+            <IconButton color="inherit" onClick={() => setMobileMenuOpen(true)} sx={{ mr: 2 }}>
               <MenuIcon />
             </IconButton>
           )}
 
           <Typography
             variant="h6"
-            noWrap
             component={Link}
             to="/"
             sx={{
@@ -198,22 +160,11 @@ const Navbar = () => {
           {!isMobile && (
             <Stack direction="row" spacing={2} sx={{ flexGrow: 1 }}>
               {menuItems.map((item) => (
-                <Button
-                  key={item.text}
-                  startIcon={item.icon}
-                  component={Link}
-                  to={item.path}
-                  color="inherit"
-                >
+                <Button key={item.text} startIcon={item.icon} component={Link} to={item.path} color="inherit">
                   {item.text}
                 </Button>
               ))}
-              <Button
-                color="inherit"
-                startIcon={<CategoryIcon />}
-                endIcon={<ArrowDownIcon />}
-                onClick={handleCategoryClick}
-              >
+              <Button color="inherit" startIcon={<CategoryIcon />} endIcon={<ArrowDownIcon />} onClick={handleCategoryClick}>
                 Categories
               </Button>
             </Stack>
@@ -221,139 +172,45 @@ const Navbar = () => {
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <SearchBar />
-            
+            <Tooltip title="Cart">
+              <MotionIconButton component={Link} to="/cart" color="inherit">
+                <Badge badgeContent={cart?.items?.length || 0} color="primary">
+                  <CartIcon />
+                </Badge>
+              </MotionIconButton>
+            </Tooltip>
+
             {user ? (
               <>
-                <Tooltip title="Cart">
-                  <MotionIconButton
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    color="inherit"
-                    component={Link}
-                    to="/cart"
-                  >
-                    <Badge badgeContent={cart?.items?.length || 0} color="primary">
-                      <CartIcon />
-                    </Badge>
-                  </MotionIconButton>
-                </Tooltip>
-
                 <Tooltip title="Account settings">
-                  <IconButton
-                    onClick={handleMenu}
-                    size="small"
-                    sx={{ ml: 2 }}
-                    aria-controls={Boolean(anchorEl) ? 'account-menu' : undefined}
-                    aria-haspopup="true"
-                    aria-expanded={Boolean(anchorEl) ? 'true' : undefined}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ 
-                        width: 32, 
-                        height: 32,
-                        bgcolor: user.role === 'admin' ? 'secondary.main' : 'primary.main',
-                        border: user.role === 'admin' ? '2px solid #FFD700' : 'none'
-                      }}>
-                        {user.role === 'admin' ? <AdminIcon /> : user.name?.charAt(0).toUpperCase()}
-                      </Avatar>
-                    </Box>
+                  <IconButton onClick={handleMenu} size="small">
+                    <Avatar sx={{ bgcolor: user.role === 'admin' ? 'secondary.main' : 'primary.main' }}>
+                      {user.role === 'admin' ? <AdminIcon /> : user.name?.charAt(0).toUpperCase()}
+                    </Avatar>
                   </IconButton>
                 </Tooltip>
-                <Menu
-                  anchorEl={anchorEl}
-                  id="account-menu"
-                  open={Boolean(anchorEl)}
-                  onClose={handleClose}
-                  onClick={handleClose}
-                  PaperProps={{
-                    elevation: 0,
-                    sx: {
-                      overflow: 'visible',
-                      filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-                      mt: 1.5,
-                      '& .MuiAvatar-root': {
-                        width: 32,
-                        height: 32,
-                        ml: -0.5,
-                        mr: 1,
-                      },
-                    },
-                  }}
-                  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                >
-                  {user.role === 'admin' && (
-                    <Box sx={{ bgcolor: 'secondary.light', px: 2, py: 1 }}>
-                      <Typography variant="subtitle2" color="secondary.contrastText">
-                        Admin Account
-                      </Typography>
-                    </Box>
-                  )}
+                <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose}>
                   {userMenuItems.map((item) => (
-                    <MenuItem
-                      key={item.text}
-                      onClick={() => {
-                        navigate(item.path);
-                        handleClose();
-                      }}
-                    >
+                    <MenuItem key={item.text} onClick={() => navigate(item.path)}>
                       <ListItemIcon>{item.icon}</ListItemIcon>
                       <ListItemText primary={item.text} />
                     </MenuItem>
                   ))}
                   <Divider />
                   <MenuItem onClick={handleLogout}>
-                    <ListItemIcon>
-                      <LogoutIcon />
-                    </ListItemIcon>
+                    <ListItemIcon><LogoutIcon /></ListItemIcon>
                     <ListItemText primary="Logout" />
                   </MenuItem>
                 </Menu>
               </>
             ) : (
-              <Button
-                color="inherit"
-                startIcon={<PersonIcon />}
-                component={Link}
-                to="/login"
-              >
+              <Button color="inherit" startIcon={<PersonIcon />} component={Link} to="/login">
                 Login
               </Button>
             )}
           </Box>
         </Toolbar>
       </Container>
-
-      <Drawer
-        anchor="left"
-        open={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-      >
-        <Box
-          sx={{ width: 250 }}
-          role="presentation"
-          onClick={() => setMobileMenuOpen(false)}
-        >
-          <List>
-            {menuItems.map((item) => (
-              <ListItem
-                key={item.text}
-                component={Link}
-                to={item.path}
-                button
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
-            <ListItem button onClick={handleCategoryClick}>
-              <ListItemIcon><CategoryIcon /></ListItemIcon>
-              <ListItemText primary="Categories" />
-            </ListItem>
-          </List>
-        </Box>
-      </Drawer>
-
       {renderCategories()}
     </AppBar>
   );

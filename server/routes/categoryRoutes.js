@@ -3,11 +3,12 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const categoryController = require('../controllers/categoryController');
 
-// Public routes
+// ✅ Public Routes
 router.get('/', categoryController.getAllCategories);
 router.get('/:id', categoryController.getCategory);
+router.get('/:id/products', categoryController.getCategoryWithProducts); // Fetch category with products
 
-// Admin routes
+// ✅ Admin Routes (Protected)
 router.use(auth);
 router.post('/', categoryController.createCategory);
 router.put('/:id', categoryController.updateCategory);
