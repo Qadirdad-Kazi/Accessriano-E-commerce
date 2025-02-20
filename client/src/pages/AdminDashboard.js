@@ -301,34 +301,36 @@ const AdminDashboard = () => {
   // Delete review
   const handleDeleteReview = async (reviewId) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      console.log('Deleting review:', reviewId);
-      const response = await axiosInstance.delete(`/reviews/${reviewId}`, {
-        headers: { 
-          'x-auth-token': token
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (!token) {
+            throw new Error('Authentication token not found');
         }
-      });
-      
-      console.log('Delete response:', response.data);
-      
-      if (response.data.success) {
-        toast.success("Review deleted successfully!");
-        // Recalculate the current page number if it's the last item on the page
-        const newPage = reviews.length === 1 && reviewsPage > 1 ? reviewsPage - 1 : reviewsPage;
-        fetchReviews(newPage);
-      } else {
-        throw new Error(response.data.message || 'Failed to delete review');
-      }
+
+        console.log('Deleting review as admin:', reviewId);
+        const response = await axiosInstance.delete(`/reviews/admin/${reviewId}`, {
+            headers: { 'x-auth-token': token }
+        });
+
+        console.log('Delete response:', response.data);
+
+        if (response.data.success) {
+            toast.success("Review deleted successfully!");
+
+            // ✅ Remove deleted review from state immediately
+            setReviews((prevReviews) => prevReviews.filter((review) => review._id !== reviewId));
+
+            // ✅ Force a fresh fetch to confirm deletion
+            setTimeout(() => fetchReviews(reviewsPage), 500);
+        } else {
+            throw new Error(response.data.message || 'Failed to delete review');
+        }
     } catch (error) {
-      console.error('Error deleting review:', error.response || error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete review';
-      toast.error(errorMessage);
+        console.error('Error deleting review:', error.response || error);
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to delete review';
+        toast.error(errorMessage);
     }
-  };
+};
+
 
   useEffect(() => {
     const fetchData = async () => {

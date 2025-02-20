@@ -199,7 +199,7 @@ exports.getReportedReviews = catchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         data: reviews
-    });
+    }); 
 });
 
 exports.getAllReviews = catchAsync(async (req, res) => {
@@ -232,6 +232,23 @@ exports.getAllReviews = catchAsync(async (req, res) => {
         }
     });
 });
+
+exports.adminDeleteReview = catchAsync(async (req, res) => {
+    // Check if review exists
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+        throw new AppError('Review not found', 404);
+    }
+
+    // Delete the review
+    await review.deleteOne();
+
+    res.status(200).json({
+        success: true,
+        message: 'Review deleted successfully by admin'
+    });
+});
+
 
 exports.moderateReview = catchAsync(async (req, res) => {
     // Check if user is admin

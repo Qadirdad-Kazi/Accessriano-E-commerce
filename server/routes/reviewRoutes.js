@@ -14,7 +14,7 @@ router.get('/product/:productId', cache(300), reviewController.getProductReviews
 router.use(auth);
 
 // Create review with validation
-router.post('/', 
+router.post('/',  
     validate(reviewSchema),
     reviewController.createReview
 );
@@ -27,6 +27,9 @@ router.put('/:id',
 
 // Delete own review
 router.delete('/:id', reviewController.deleteReview);
+
+// Admin-only delete route
+router.delete('/admin/:id', reviewController.adminDeleteReview);
 
 // Vote review as helpful
 router.post('/:id/helpful', reviewController.voteHelpful);
